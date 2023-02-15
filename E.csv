@@ -1,0 +1,14 @@
+name,E
+pi,beta
+budget,72710.94584
+wp,6,2020/10,2023/12,1820
+wp,9,2020/10,2023/12,390
+periods,1,2020/10,2021/9
+periods,2,2021/10,2022/9
+periods,3,2022/10,2023/9
+target,E/CONTRACT 1,0.0,0.5,0.5
+target,beta,0.03,0.03,0.03
+target,epsilon,0.049,0.049,0.049
+target,gamma,0.03,0.03,0.03
+target,alpha,0.03,0.03,0.03
+target,zeta,0.0,0.0,0

@@ -1,0 +1,12 @@
+name,C
+pi,nan
+budget,71929.670056
+wp,6,2019/1,2021/12,2730
+periods,1,2019/1,2019/12
+periods,2,2020/1,2020/12
+periods,3,2021/1,2021/12
+target,C/CONTRACT 1,0.5,0.5,0
+target,C/CONTRACT 2,0,0.3333,0
+target,beta,0.03,0.03,0.1
+target,gamma,0.05,0,0
+target,alpha,0.1,0.07,0.05
