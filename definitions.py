@@ -3,6 +3,23 @@ Roger Lera
 2023/01/07
 """
 
+class Month:
+    """
+    This class stores the information stored in a month
+    """
+    months = 
+
+    def __init__(self,month,year):
+        self.id = id_
+        self.name = name
+        self.pi = pi
+        self.budget = budget
+        self.wp = []
+        self.period = []
+        self.researchers = []
+        self.target = []
+
+
 class Researcher:
     """
     This class stores the information about researchers and their features:
@@ -26,9 +43,12 @@ class Researcher:
             raise ValueError(f"Researcher time ({time}) must be a float or int.")
         if type(contract) != float and type(contract) != int:
             raise ValueError(f"Researcher contract ({contract}) must be a bool.")
+
+        return None
         
 
     def __init__(self,id_,name,cost=50.0,time=130,contract=True):
+        test_input(id_,name,cost,time,contract)
         self.id = id_
         self.name = name
         self.cost = cost
@@ -60,21 +80,19 @@ class Projects:
         - target: target of each researcher -- list
     """
 
-    def test_input(id_,name,cost,time,contract):
+    def test_input(id_,name,pi,budget):
         
         if type(id_) != int:
-            raise ValueError(f"Researcher Id ({id_}) must be an integer.")
+            raise ValueError(f"Project Id ({id_}) must be an integer.")
         if type(name) != str:
-            raise ValueError(f"Researcher name ({name}) must be a string.")
-        if type(cost) != float and type(cost) != int:
-            raise ValueError(f"Researcher cost ({cost}) must be a float or int.")
-        if type(time) != float and type(time) != int:
-            raise ValueError(f"Researcher time ({time}) must be a float or int.")
-        if type(contract) != float and type(contract) != int:
-            raise ValueError(f"Researcher contract ({contract}) must be a bool.")
+            raise ValueError(f"Project name ({name}) must be a string.")
+        if type(pi.name) != str and pi != None:
+            raise ValueError(f"Project P.I. ({pi.name}) must be a researcher.")
+        if type(budget) != float and type(budget) != int:
+            raise ValueError(f"Project budget ({budget}) must be a float or int.")
         
 
-    def __init__(self,id_,name,pi=None,cost=50.0,time=130,contract=True):
+    def __init__(self,id_,name,pi=None,budget=1000000.0):
         self.id = id_
         self.name = name
         self.pi = pi
@@ -85,11 +103,8 @@ class Projects:
         self.target = []
         
     def __str__(self):
-        if self.contract:
-            string_ = f"Project: {self.name} \t ID: {self.id} \n"
-        else:
-            string_ = f"P.I.: {self.pi.name} \t ID: {self.id} \n"
-        string_ += f"\n Cost: {self.cost:.2f} \t Time: {self.time}"
+        string_ = f"Project: {self.name} \t ID: {self.id} \n"
+        string_ += f"P.I.: {self.pi.name} \t Budget: {self.budget:.2f}"
         return string_
 
     def __repr__(self):
