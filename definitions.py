@@ -8,23 +8,26 @@ class Month:
     This class stores the information stored in a month
     """
     months = ["January","February","March","April","May","June",
-            "July","August","September","October","November","Desember"]
+            "July","August","September","October","November","December"]
 
-    def test_input(month,year):
+    def test_input(self,month,year):
         
         if type(month) != int:
             raise ValueError(f"Month ({month}) must be an int.")
+        if month <= 0 or month > 12:
+            raise ValueError(f"Month ({month}) must be between 1 and 12 included.")
         if type(year) != int:
             raise ValueError(f"Year ({year}) must be an int.")
 
     def __init__(self,month,year):
-        test_input(month,year)
+        self.test_input(month,year)
         self.id = year*100 + month
         self.month = month
         self.year = year
+        
 
     def __str__(self):
-        return f"{month[self.month - 1]} of {self.year}"
+        return f"{self.months[self.month - 1]} of {self.year}"
 
     def __repr__(self):
         return self.id
@@ -35,38 +38,36 @@ class WorkPackage:
         - id: self generated ID -- int
         - project: project belonging -- Project 
         - name: Project+id -- str
-        - start month: Start Month -- Month
-        - end month: End Month -- Month
+        - start: Start Month -- Month
+        - end: End Month -- Month
         - dedication: number of time slots required (h) -- float/int
     """
 
-    def test_input(id_,project,start_month,end_month,dedication):
+    def test_input(self,id_,project,start_month,end_month,dedication):
         
         if type(id_) != int:
             raise ValueError(f"Work Package Id ({id_}) must be an integer.")
-        if type(project) != __main__.Project:
-            raise ValueError(f"Project name ({name}) must be a string.")
-        if type(pi.name) != str and pi != None:
-            raise ValueError(f"Project P.I. ({pi.name}) must be a researcher.")
-        if type(budget) != float and type(budget) != int:
-            raise ValueError(f"Project budget ({budget}) must be a float or int.")
+        if isinstance(project,Project) == False:
+            raise ValueError(f"Work Package project ({project}) must be a Project object.")
+        if isinstance(start_month,Month) == False:
+            raise ValueError(f"Work Package start_month ({start_month}) must be a Month object.")
+        if isinstance(end_month,Month) == False:
+            raise ValueError(f"Work Package end_month ({end_month}) must be a Month object.")
+        if type(dedication) != float and type(dedication) != int:
+            raise ValueError(f"Work Package dedication ({dedication}) must be a float or int.")
         
 
     def __init__(self,id_,project,start_month,end_month,dedication):
-        test_input(id_,project,start_month,end_month,dedication)
+        self.test_input(id_,project,start_month,end_month,dedication)
         self.id = project.id*1000 + id_
-        self.name = name
-        self.pi = pi
-        self.budget = budget
-        self.wp = []
-        self.period = []
-        self.researchers = []
-        self.target = []
+        self.name = f"{project.name}/{id_}"
+        self.project = project
+        self.start = start_month
+        self.end = end_month
+        self.dedication = dedication
         
     def __str__(self):
-        string_ = f"Project: {self.name} \t ID: {self.id} \n"
-        string_ += f"P.I.: {self.pi.name} \t Budget: {self.budget:.2f}"
-        return string_
+        return self.name
 
     def __repr__(self):
         return self.id
@@ -83,7 +84,7 @@ class Researcher:
                     is a tenure researcher. 
     """
 
-    def test_input(id_,name,cost,time,contract):
+    def test_input(self,id_,name,cost,time,contract):
         
         if type(id_) != int:
             raise ValueError(f"Researcher Id ({id_}) must be an integer.")
@@ -93,14 +94,14 @@ class Researcher:
             raise ValueError(f"Researcher cost ({cost}) must be a float or int.")
         if type(time) != float and type(time) != int:
             raise ValueError(f"Researcher time ({time}) must be a float or int.")
-        if type(contract) != float and type(contract) != int:
+        if type(contract) != bool:
             raise ValueError(f"Researcher contract ({contract}) must be a bool.")
 
         return None
         
 
-    def __init__(self,id_,name,cost=50.0,time=130,contract=True):
-        test_input(id_,name,cost,time,contract)
+    def __init__(self,id_,name,cost=50.0,time=130,contract=False):
+        self.test_input(id_,name,cost,time,contract)
         self.id = id_
         self.name = name
         self.cost = cost
@@ -112,14 +113,14 @@ class Researcher:
             string_ = f"Researcher: {self.name} \t ID: {self.id} (contract)\n"
         else:
             string_ = f"Researcher: {self.name} \t ID: {self.id} \n"
-        string_ += f"\n Cost: {self.cost:.2f} \t Time: {self.time}"
+        string_ += f"\t Cost: {self.cost:.2f} \t Time: {self.time}"
         return string_
 
     def __repr__(self):
         return self.id
     
 
-class Projects:
+class Project:
     """
     This class stores the information about projects and their features:
         - id: self generated ID -- int
@@ -132,20 +133,20 @@ class Projects:
         - target: target of each researcher -- list
     """
 
-    def test_input(id_,name,pi,budget):
+    def test_input(self,id_,name,pi,budget):
         
         if type(id_) != int:
             raise ValueError(f"Project Id ({id_}) must be an integer.")
         if type(name) != str:
             raise ValueError(f"Project name ({name}) must be a string.")
-        if type(pi.name) != str and pi != None:
-            raise ValueError(f"Project P.I. ({pi.name}) must be a researcher.")
+        if isinstance(pi,Researcher) == False:
+            raise ValueError(f"Project P.I. ({pi}) must be a Researcher.")
         if type(budget) != float and type(budget) != int:
             raise ValueError(f"Project budget ({budget}) must be a float or int.")
         
 
     def __init__(self,id_,name,pi=None,budget=1000000.0):
-        test_input(id_,name,pi,budget)
+        self.test_input(id_,name,pi,budget)
         self.id = id_
         self.name = name
         self.pi = pi
@@ -157,7 +158,7 @@ class Projects:
         
     def __str__(self):
         string_ = f"Project: {self.name} \t ID: {self.id} \n"
-        string_ += f"P.I.: {self.pi.name} \t Budget: {self.budget:.2f}"
+        string_ += f"\t P.I.: {self.pi.name} \t Budget: {self.budget:.2f}"
         return string_
 
     def __repr__(self):
