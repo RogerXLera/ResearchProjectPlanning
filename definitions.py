@@ -7,10 +7,54 @@ class Month:
     """
     This class stores the information stored in a month
     """
-    months = 
+    months = ["January","February","March","April","May","June",
+            "July","August","September","October","November","Desember"]
+
+    def test_input(month,year):
+        
+        if type(month) != int:
+            raise ValueError(f"Month ({month}) must be an int.")
+        if type(year) != int:
+            raise ValueError(f"Year ({year}) must be an int.")
 
     def __init__(self,month,year):
-        self.id = id_
+        test_input(month,year)
+        self.id = year*100 + month
+        self.month = month
+        self.year = year
+
+    def __str__(self):
+        return f"{month[self.month - 1]} of {self.year}"
+
+    def __repr__(self):
+        return self.id
+
+class WorkPackage:
+    """
+    This class stores the information about workpackages and their features:
+        - id: self generated ID -- int
+        - project: project belonging -- Project 
+        - name: Project+id -- str
+        - start month: Start Month -- Month
+        - end month: End Month -- Month
+        - dedication: number of time slots required (h) -- float/int
+    """
+
+    def test_input(id_,project,start_month,end_month,dedication):
+        
+        if type(id_) != int:
+            raise ValueError(f"Work Package Id ({id_}) must be an integer.")
+        if type(project) != __main__.Project:
+            raise ValueError(f"Project name ({name}) must be a string.")
+        if type(pi.name) != str and pi != None:
+            raise ValueError(f"Project P.I. ({pi.name}) must be a researcher.")
+        if type(budget) != float and type(budget) != int:
+            raise ValueError(f"Project budget ({budget}) must be a float or int.")
+        
+
+    def __init__(self,id_,project,start_month,end_month,dedication):
+        test_input(id_,project,start_month,end_month,dedication)
+        self.id = project.id*1000 + id_
         self.name = name
         self.pi = pi
         self.budget = budget
@@ -18,6 +62,14 @@ class Month:
         self.period = []
         self.researchers = []
         self.target = []
+        
+    def __str__(self):
+        string_ = f"Project: {self.name} \t ID: {self.id} \n"
+        string_ += f"P.I.: {self.pi.name} \t Budget: {self.budget:.2f}"
+        return string_
+
+    def __repr__(self):
+        return self.id
 
 
 class Researcher:
@@ -93,6 +145,7 @@ class Projects:
         
 
     def __init__(self,id_,name,pi=None,budget=1000000.0):
+        test_input(id_,name,pi,budget)
         self.id = id_
         self.name = name
         self.pi = pi
