@@ -1,6 +1,6 @@
 # ResearchProjectPlanning
 ## Research Project Planning (RPP).
-===================
+------------
 This repository contains the implementation of RPP problem algorithm. The data considers real research projects of the [IIIA-CSIC](https://www.iiia.csic.es/en-us/). The names of the projects and researchers are random letters for the sake of anonymity. 
 The main developers of this implemmentation are Roger X. Lera and [Filippo Bistaffa](https://filippobistaffa.github.io/).
 
