@@ -32,46 +32,21 @@ class Month:
     def __repr__(self):
         return self.id
 
-class WorkPackage:
-    """
-    This class stores the information about workpackages and their features:
-        - id: self generated ID -- int
-        - project: project belonging -- Project 
-        - name: Project+id -- str
-        - start: Start Month -- Month
-        - end: End Month -- Month
-        - dedication: number of time slots required (h) -- float/int
-    """
-
-    def test_input(self,id_,project,start_month,end_month,dedication):
-        
-        if type(id_) != int:
-            raise ValueError(f"Work Package Id ({id_}) must be an integer.")
-        if isinstance(project,Project) == False:
-            raise ValueError(f"Work Package project ({project}) must be a Project object.")
-        if isinstance(start_month,Month) == False:
-            raise ValueError(f"Work Package start_month ({start_month}) must be a Month object.")
-        if isinstance(end_month,Month) == False:
-            raise ValueError(f"Work Package end_month ({end_month}) must be a Month object.")
-        if type(dedication) != float and type(dedication) != int:
-            raise ValueError(f"Work Package dedication ({dedication}) must be a float or int.")
-        
-
-    def __init__(self,id_,project,start_month,end_month,dedication):
-        self.test_input(id_,project,start_month,end_month,dedication)
-        self.id = project.id*1000 + id_
-        self.name = f"{project.name}/{id_}"
-        self.project = project
-        self.start = start_month
-        self.end = end_month
-        self.dedication = dedication
-        
-    def __str__(self):
-        return self.name
-
-    def __repr__(self):
-        return self.id
-
+    def add(self,list_):
+        """
+        This method adds a Month object within an ordered month list within the month
+        returns the position where the element was added
+        """
+        len_ = len(list_)
+        for i in range(len_ - 1,-1,-1):
+            m = list_[i]
+            if self.id == m.id: #if it is the same month, we delete and we do not add the same element
+                return i
+            elif self.id > m.id: #if the element is posterior, we add it in the next position
+                list_.insert(i+1,self)
+                return i
+        list_.insert(0,self) #if the month is the earliest, we add it in the beggining of the list
+        return 0
 
 class Researcher:
     """
@@ -118,7 +93,135 @@ class Researcher:
 
     def __repr__(self):
         return self.id
+
+    def add(self,list_):
+        """
+        This method adds a Researcher object within a unordered list
+        """
+        if self not in list_:
+            list_.append(self)
+        return None
+
+
+class WorkPackage:
+    """
+    This class stores the information about workpackages and their features:
+        - id: self generated ID -- int
+        - project: project belonging -- Project 
+        - name: Project+id -- str
+        - start: Start Month -- Month
+        - end: End Month -- Month
+        - dedication: number of time slots required (h) -- float/int
+    """
+
+    def test_input(self,id_,project,start_month,end_month,dedication):
+        
+        if type(id_) != int:
+            raise ValueError(f"Work Package Id ({id_}) must be an integer.")
+        if isinstance(project,Project) == False:
+            raise ValueError(f"Work Package project ({project}) must be a Project object.")
+        if isinstance(start_month,Month) == False:
+            raise ValueError(f"Work Package start_month ({start_month}) must be a Month object.")
+        if isinstance(end_month,Month) == False:
+            raise ValueError(f"Work Package end_month ({end_month}) must be a Month object.")
+        if type(dedication) != float and type(dedication) != int:
+            raise ValueError(f"Work Package dedication ({dedication}) must be a float or int.")
+        
+
+    def __init__(self,id_,project,start_month,end_month,dedication):
+        self.test_input(id_,project,start_month,end_month,dedication)
+        self.id = project.id*1000 + id_
+        self.name = f"{project.name}/{id_}"
+        self.project = project
+        self.start = start_month
+        self.end = end_month
+        self.dedication = dedication
+        
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.id
+
+    def add(self,list_):
+        """
+        This method adds a Work Package object within a unordered list
+        """
+        if self not in list_:
+            list_.append(self)
+        return None
+
+class Period:
+    """
+        This class stores the information period of a Project
+    """
     
+    def test_input(self,id_,start,end):
+        
+        if type(id_) != int:
+            raise ValueError(f"Period ID ({id_}) must be an int.")
+        if isinstance(start,Month) == False:
+            raise ValueError(f"Period start month ({start}) must be a month.")
+        if isinstance(end,Month) == False:
+            raise ValueError(f"Period end month ({end}) must be a month.")
+
+    def __init__(self,id_,start,end):
+        
+        self.test_input(id_,start,end)
+        self.id = id_
+        self.start = start
+        self.end = end
+        
+
+    def __str__(self):
+        string = f"ID: {self.id} Start: {str(self.start)}\n"
+        string += f"\t End: {str(self.end)}"
+        return string
+
+    def __repr__(self):
+        return self.id
+
+    def check(self,month):
+        """
+            Checks whether a month is within a period
+        """
+        if self.start.id <= month.id and self.finish.id >= month.id:
+            return True
+        else:
+            return False
+
+    def update(self,month):
+
+        if self.start.id > month.id:
+            self.start = month
+        elif self.end.id < month.id:
+            self.end = month
+        
+        return None
+            
+
+    def add(self,list_):
+        """
+        This method adds a Period object within an ordered period list within the month
+        Returns the position where the element was added
+        """
+        len_ = len(list_)
+        for i in range(len_ - 1,-1,-1):
+            p = list_[i]
+            start = p.start
+            end = p.end 
+            if self.start.id == start.id and self.end.id == end.id: #if it is the same month, we add the period as well
+                list_.insert(i+1,self)
+                return i
+            elif self.start.id == start.id and self.end.id > end.id: #if the element is posterior, we add it in the next position
+                list_.insert(i+1,self)
+                return i
+            elif self.start.id > start.id: #if the element is posterior, we add it in the next position
+                list_.insert(i+1,self)
+                return i
+
+        list_.insert(0,self) #if the month is the earliest, we add it in the beggining of the list
+        return 0
 
 class Project:
     """
@@ -163,263 +266,157 @@ class Project:
 
     def __repr__(self):
         return self.id
+
+    def add(self,list_):
+        """
+        This method adds a Project object within a unordered list
+        """
+        if self not in list_:
+            list_.append(self)
+        return None
     
 
-
-class TimePeriod:
+class Target:
     """
-    This class stores the information about time periods and its methods.
+    This class stores the information about projects and their features:
+        - id: self generated ID -- int
+        - project: -- Project
+        - researcher: -- Researcher
+        - period: -- Period
+        - value: [0,1] dedication of the researcher in a project during a period -- float
     """
-    def check_error(self,value):
-        if value != None:
-            if type(value) != int:
-                raise ValueError(f"Expected integer and got {type(value)} with value {value}")
-                return False
-            elif value < 0:
-                raise ValueError(f"Expected and integer bigger than 0 and got {value}.")
-                return False
-            else:
-                return True
-        else:
-            return True
 
-    def check(self):
-        """
-            This function checks if the self has sense, if it makes sense, it completes the duration and returns True.
-            Otherwise, it returns False and it corrects the info by changing the duration or the finish date
-            If there is not complete info, it remains unchanged and returns True
-        """
-        if self.start_date != None and self.finish_date != None:
-            if self.start_date > self.finish_date:
-                if self.duration != None and self.duration > 0:
-                    self.finish_date = self.start_date + self.duration - 1
-                    return False
-                else:
-                    self.duration = 1
-                    self.finish_date = self.start_date + self.duration - 1
-                    return False
-            else:
-                if self.duration != None:
-                    if self.duration == self.finish_date - self.start_date + 1:
-                        return True
-                    else:
-                        self.duration = self.finish_date - self.start_date + 1
-                        return False
-                else:
-                    self.duration = self.finish_date - self.start_date + 1
-                    return True
-
-        elif self.start_date != None and self.duration > 0:
-            if self.finish_date != None:
-                if self.finish_date != self.start_date + self.duration - 1:
-                    self.finish_date = self.start_date + self.duration - 1
-                    return False
-                else:
-                    return True
-            else:
-                self.finish_date = self.start_date + self.duration - 1
-                return True
-
-        elif self.finish_date != None and self.duration > 0:
-            if self.start_date != None:
-                if self.start_date != self.finish_date - self.duration + 1:
-                    self.start_date = self.finish_date - self.duration + 1
-                    return False
-                else:
-                    return True
-            else:
-                self.start_date = self.finish_date - self.duration + 1
-                return True
+    def test_input(self,project,researcher,period,value):
         
-        elif self.start_date != None:
-            self.duration = 1
-            self.finish_date = self.start_date + self.duration - 1
-            return True
+        if isinstance(project,Project) == False:
+            raise ValueError(f"Target project ({project}) must be a Project.")
+        if isinstance(researcher,Researcher) == False:
+            raise ValueError(f"Target researcher ({researcher}) must be a Researcher.")
+        if isinstance(period,Period) == False:
+            raise ValueError(f"Target period ({period}) must be a Period.")
+        if type(value) != float:
+            raise ValueError(f"Target value ({value}) must be a float.")
+        if value < 0 or value > 1:
+            raise ValueError(f"Target value, t ({value}) must be 0 <= t <= 1.")
+        
 
-        elif self.finish_date != None:
-            self.duration = 1
-            self.start_date = self.finish_date - self.duration + 1
-            return True
-
-        elif self.duration > 0:
-            self.start_date = 0
-            self.finish_date = self.start_date + self.duration - 1
-            return True
-
-        else:
-            self.start_date = 0
-            self.duration = 1
-            self.finish_date = self.start_date + self.duration - 1
-            return True
-
-    
-
-    def __init__(self,id_,start_date=None,finish_date=None,duration=None,tau=None):
-        if self.check_error(id_):
-            self.id = id_ #start date (week)
-        if self.check_error(start_date):
-            self.start_date = start_date #start date (week)
-        if self.check_error(finish_date):
-            self.finish_date = finish_date #finish date in (week)
-        if self.check_error(duration):
-            self.duration = duration # duration in (week)
-        if self.check_error(tau):
-            self.tau = tau #time slots available in the period: tau <= time_slot
-
-        self.check()
-
+    def __init__(self,project,researcher,period,value=1.0):
+        self.test_input(project,researcher,period,value)
+        self.id = project.id*10000 + researcher.id*10 + period.id
+        self.project = project
+        self.researcher = researcher
+        self.period = period
+        self.value = value
+        
     def __str__(self):
-        string_ = f"Period: {self.id} \n Start Date: {self.start_date} \n Finish Date: {self.finish_date} \n"
-        string_ += f"Duration: {self.duration} \n Tau: {self.tau}"
+        string_ = f"Target: {self.id} \t Value: {self.value} \n"
+        string_ += f"\t Project: {self.project.name} \t Researcher: {self.researcher.name} \t Period: {str(self.period)}"
         return string_
 
+    def __repr__(self):
+        return self.id
 
-    def update(self,start_date=None,finish_date=None,duration=None):
-        
-        self.check() # we check all okey
-        if start_date != None:
-            if self.check_error(start_date):
-                self.start_date = start_date
-                self.finish_date = self.start_date + self.duration - 1
-        
-        if finish_date != None:
-            if self.check_error(finish_date):
-                if finish_date < self.start_date:
-                    raise ValueError(f"Input finish date ({finish_date}) is earlier than current start date ({self.start_date})")
-                    return False
-                self.finish_date = finish_date
-                self.duration = self.finish_date - self.start_date + 1
-
-        if duration != None:
-            if self.check_error(duration):
-                if duration == 0:
-                    raise ValueError(f"Input duration ({duration}) has to be bigger than 0.")
-                    return False
-                self.duration = duration
-                self.finish_date = self.start_date + self.duration - 1
-
-        return True
+    def add(self,list_):
+        """
+        This method adds a Target object within a unordered list
+        """
+        if self not in list_:
+            list_.append(self)
+        return None
 
         
-class TimePeriodSequence:
+class PlanningHorizon:
     """
-    This class stores the information about time periods and its methods.
+    This class stores the information about the planning horizon.
     """
 
-    def __init__(self,id=0):
-        self.id = id
+        
+    def test_input(self,id_,start,end):
+        
+        if type(id_) == int:
+            raise ValueError(f"Planning Horizon ID ({id_}) must be an int.")
+        if isinstance(period,Period) == False:
+            raise ValueError(f"Planning Horizon start month ({period}) must be a Period.")
+        
+        
+    def init_sequence(self):
+        
+        n_months = 12
+        iter_ = self.start.id
+        iter_month = self.start.month
+        iter_year = self.start.year
+        max_iter = self.end.id
+
+        while iter_ <= max_iter:
+            month_ = Month(month=iter_month,year=iter_year)
+            month_.add(self.sequence)
+            if iter_month < n_months:
+                iter_month += 1
+                iter_ += 1
+            else:
+                iter_month = 1
+                iter_year += 1
+                iter_ = iter_year*100 + iter_month
+                
+        return None
+            
+    def __init__(self,period,id_=0):
+        self.test_input(id_,start,end)
+        self.id = id_
+        self.start = period.start
+        self.end = period.end
         self.sequence = []
+        self.init_sequence()
+        
 
     def __str__(self):
-        string_ = f"Time Period Sequence: {self.id} \n"
-        if len(self.sequence) == 0:
-            string_ += "\t None"
+        string = f"ID: {self.id} Start: {str(self.start)}\n"
+        string += f"\t End: {str(self.end)}"
+
+    def __repr__(self):
+        return self.id
+
+    def check(self,month):
+        """
+            Checks whether a month is within a period
+        """
+        if self.start.id <= month.id and self.finish.id >= month.id:
+            return True
         else:
-            for p in self.sequence:
-                string_ += f"\t Period {p.id} \t Start: {p.start_date} \t Tau: {p.tau} \n"
-        return string_
+            return False
 
-    def add_period(self,period):
-        len_ = len(self.sequence)
-        if len_ == 0:
-            self.sequence.append(period)
-        else:
-            last_period = self.sequence[-1]
-            if period.start_date > last_period.finish_date:
-                self.sequence.append(period)
+    def update(self,month_list):
 
-            else:
-                for i in range(len_):
-                    curr_ = self.sequence[i]
-                    if curr_.finish_date >= period.start_date:
-                        if curr_.start_date <= period.start_date:
-                            raise ValueError(f"Input Period ({period.start_date}-{period.finish_date}) overlaps with period ({curr_.start_date}-{curr_.finish_date})")
-                        else:
-                            if curr_.start_date <= period.finish_date:
-                                raise ValueError(f"Input Period ({period.start_date}-{period.finish_date}) overlaps with period ({curr_.start_date}-{curr_.finish_date})")
-                            else:
-                                self.sequence.insert(i,period)
-
-
-class Job:
-    """
-    This class stores the information about Jobs and its methods.
-    """
-
-    def __init__(self,id,name,descriptor=None):
-        self.id = id
-        self.name = name
-        self.descriptor = descriptor
-        self.skills = [] #skills needed for obtaining the job
-
-    def __str__(self):
-        string_ = f"Job: {self.name} \n Descriptor: {self.descriptor} \n Skills: \n"
-        if len(self.skills) == 0:
-            string_ += "\t None"
-        else:
-            for s in self.skills:
-                string_ += f"\t Skill: {s.name} \t Level: {s.level} \n"
-
-        return string_
-
-
-class UserPreferences:
-    """
-    This class stores the information about the users preferences.
-    """
-
-    def __init__(self,id,name,nperiods=10,dedication=1,target_job=None):
-        self.id = id
-        self.name = name
-        self.nperiods = nperiods
-        self.dedication = dedication
-        self.target_job = target_job
-
-    def __str__(self):
-        string_ = f"User Preference: {self.name} \n Number of periods: {self.nperiods} \n"
-        string_ += f"Dedication per period: {self.dedication} \n Target Job: {self.target_job.name}"
-        return string_
+        for month in month_list:
+            if self.start.id > month.id:
+                self.start = month
+                
+            elif self.end.id < month.id:
+                self.end = month
+        
+        self.init_sequence()
+        
+        return None
 
 
 if __name__ == '__main__':
 
     print("---------------------------------------------------------------")
-    print("SKILL")
-    x = Skill('plant',2)
-    print(x)
-    print(x.name)
-    print(x.level)
-    y = Skill('feed',3)
-
-    print("---------------------------------------------------------------")
-    print("ACTIVITY")
-    a = Activity(0,"Plant tree",1,1)
-    print(a)
-    print(a.id)
-    print(a.name)
-    print(a.skills)
-    x.add_skill(a.skills)
-    y.add_skill(a.skills)
-    print(a.skills)
-    print(a.prerequisites)
-    print(a.time)
-    print(a.cost)
-
-    print("---------------------------------------------------------------")
-    print("PERIOD")
-    p = TimePeriod(3,4,3)
+    s = Month(month=1,year=2022)
+    print(s)
+    e = Month(month=12,year=2022)
+    print(str(e))
+    r = Researcher(id_=0,name="Paco",cost=50,time=130)
+    print(r)
+    print(type(r))
+    p = Project(id_=0,name="Logistar",pi=r)
     print(p)
-    print(p.start_date)
-    print(p.finish_date)
-    print(p.duration)
-    print(p.tau)
-    p.tau = 5
-    print(p.tau)
-
-    print("---------------------------------------------------------------")
-    print("JOB")
-    j = Job(0,"Journalist")
-    print(j.id)
-    print(j.name)
-    print(j.descriptor)
-    print(j.skills)
+    wp = WorkPackage(id_=1,project=p,start_month=s,end_month=e,dedication=100)
+    print(wp)
+    a = Month(month=1,year=2022)
+    print(a.id == s.id)
+    pe = Period(id_ = 0,start=s,end=e)
+    print(pe)
+    aa = Month(month=1,year=2024)
+    pe.update(aa)
+    print(str(pe))
