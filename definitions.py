@@ -2,6 +2,7 @@
 Roger Lera
 2023/01/07
 """
+import numpy as np
 
 class Month:
     """
@@ -274,6 +275,25 @@ class Project:
         if self not in list_:
             list_.append(self)
         return None
+
+    def date(self):
+        """
+            This method returns the starting and ending date months
+            return: list(start date month, end date month)
+        """
+        date_ = [np.inf,0]
+        sd = None
+        ed = None
+        for w in self.wp:
+            if w.start.id < date_[0]:
+                date_[0] = w.start.id
+                sd = w.start
+            if w.end.id > date_[1]:
+                date_[1] = w.end.id
+                ed = w.end
+
+        return sd,ed
+
     
 
 class Target:
