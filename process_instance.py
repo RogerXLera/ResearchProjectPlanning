@@ -3,6 +3,7 @@ Roger Lera
 2023/03/07
 """
 from read_instance import read_researcher,instance_projects
+from definitions import *
 from scipy.sparse import csr_matrix
 from numba import jit
 import numpy as np
@@ -20,16 +21,21 @@ def sizeof_fmt(num, suffix="B"):
 
 def planning_horizon(P):
     """
-    This function will return the date of the start and the beginning of the
-    planning horizon
-    INPUT:
-        :P(dict)
-    RETURN: 
-        list of the months keys
+    This function will create the planning horizon
     """
-    total_dur = project_duration(P)
-    #print("|M| = ",total_dur)
-    return list(range(1,total_dur+1))
+    date_ = [np.inf,0]
+    sd_t = None
+    ed_t = None
+    for p in P:
+        sd,ed = p.date()
+        if sd.id < date_[0]:
+            date_[0] = sd.id
+            sd_t = sd
+        if ed.id > date_[1]:
+            date_[1] = sd.id
+            ed_t = ed
+    pe = Period(id_= 0,start=sd,end=ed)
+    return PlanningHorizon(period=pe)
 
 
 def in_period(period,month):
