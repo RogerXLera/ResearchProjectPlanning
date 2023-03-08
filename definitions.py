@@ -351,9 +351,9 @@ class PlanningHorizon:
     """
 
         
-    def test_input(self,id_,start,end):
+    def test_input(self,id_,period):
         
-        if type(id_) == int:
+        if isinstance(id_,int) == False:
             raise ValueError(f"Planning Horizon ID ({id_}) must be an int.")
         if isinstance(period,Period) == False:
             raise ValueError(f"Planning Horizon start month ({period}) must be a Period.")
@@ -381,7 +381,7 @@ class PlanningHorizon:
         return None
             
     def __init__(self,period,id_=0):
-        self.test_input(id_,start,end)
+        self.test_input(id_,period)
         self.id = id_
         self.start = period.start
         self.end = period.end

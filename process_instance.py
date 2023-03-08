@@ -9,6 +9,7 @@ from numba import jit
 import numpy as np
 import warnings
 import time
+import os
 
 
 def sizeof_fmt(num, suffix="B"):
@@ -42,61 +43,62 @@ def in_period(period,month):
     """
     This function checks if a month belongs into a period
     """
-    if month >= period[0] and month <= period[1]:
+    if month.id >= period.start.id and month.id <= period.end.id:
         return True
     else:
         return False
 
 
-def decision_variables(P,R,M):
+def decision_variables(P):
     """
     This function computes the decision variables list Xp and Xw
     INPUT:
-        :R (dict) researcher dictionary
-        :P (dict) project dictionary
-        :M (list) planning horizon
+        P: (list) of all projects
     RETURN: 
         xp (list) 
         xw (list)
     """
     xp = []
     xw = []
-    
-    for r in R.keys():
-        proj_inv = list(R[r][2].keys())
-        for p in proj_inv:
-            p_date = [P[p][0],P[p][0]+P[p][1]-1] # [start,end]
-            for w in P[p][4].keys():
-                wp_date = [P[p][4][w][0],P[p][4][w][0]+P[p][4][w][1]-1] # [start,end]
-                for m in M:
-                    if in_period(wp_date,m) == True:
-                        xw.append((r,(p,w),m))
-            
-            for m in M:
-                if in_period(p_date,m) == True:
-                    xp.append((r,p,m))
 
-    #print("|Xp| = ",len(xp))
-    #print("|Xw| = ",len(xw))
+    for p in P:
+        for r in p.researchers:
+            # xw
+            for w in p.wp:
+                pw = Period(id_= 0,start=w.start,end=w.end)
+                Mw = PlanningHorizon(period=pw)
+                for m in Mw.sequence:
+                    xw.append((r,w,m))
+            #xp
+            sd,ed = p.date()
+            pp = Period(id_= 0,start=sd,end=ed)
+            Mp = PlanningHorizon(period=pp)
+            for m in Mp.sequence:
+                xp.append((r,p,m))
+    
     return xp,xw
 
 
-def target_vector(xp,R,P):
+def target_vector(xp):
     """
     This function will return the target vector.
     INPUT:
-        :xp (dict) decision variable
-        :R (dict) researcher dictionary
-        :P (dict) project dictionary
+        :xp (list)
     RETURN: 
         target (np.array) 
     """
     
     target = [] # list containing all the values of the target vector
-    
-    for row in xp:
+        
+    for (r,p,m) in xp:
         # target hours per researcher
-        target.append(R[row[0]][2][row[1]][row[2]])
+        for t in p.target:
+            if t.researcher.id == r.id and in_period(t.period,m):
+                target.append(t.value * r.time)
+                break
+
+    if len(xp) != len(target):
+        raise ValueError(f"Target vector (|t| = {len(target)}) has not the same dimension as Xp (|Xp| = {len(xp)})")
     
     return np.array(target)
 
@@ -105,31 +107,31 @@ def dedication_vector(P):
     """
     This function will compute the d vector of the Formulation.
     INPUT:
-        :P (dict)
+        :P (list)
     RETURN: d vector (np.array)
     """
     d_list = []
     
-    for proj in P.keys():
-        for w in P[proj][4].keys():
-            d_list.append(P[proj][4][w][2])
+    for p in P:
+        for w in p.wp:
+            d_list.append(w.dedication)
    
     return np.array(d_list)
 
 
 def tau_vector(R,M):
     """
-    This function will compute the tau vector of the Formulation 5.0.
+    This function will compute the tau vector of the Formalisation.
     INPUT:
-        :R (dict)
-        :M (list)
+        :R (list)
+        :M (P object)
     RETURN: t (np.vector)
     """
     
     t = []
-    for res in R.keys():
-        for mon in M:
-            t.append(R[res][1])
+    for r in R:
+        for m in M.sequence:
+            t.append(r.time)
 
     return np.array(t)
 
@@ -138,14 +140,14 @@ def b_vector(P):
     """
     This function will compute the b vector of the Formulation.
     INPUT:
-        :P (dict)
+        :P (list)
     RETURN: b (np.array)
     """
     
     b = []
     
-    for proj in P.keys():
-        b.append(P[proj][3])
+    for p in P:
+        b.append(p.budget)
 
     return np.array(b)
 
@@ -210,7 +212,7 @@ def coo(A, B, size, A_c, B_c):
     return np.ones(size), R, C
 
 
-def A_matrix(xp,xw):
+def A_matrix(xw,xp):
     """
     This function will compute the A matrix of the Formulation.
     INPUT:
@@ -218,140 +220,15 @@ def A_matrix(xp,xw):
         :xw (list)
     RETURN: A matrix (np.matrix)
     """
-    st = time.time()
-
-    xp_p = [(r,p,m,0) for (r,p,m) in xp]
-    xw_p = [(r,p,m,0) for (r,(p,w),m) in xw]
-    vp = np.array(xp_p, dtype=np.uint16)
-    vw = np.array(xw_p, dtype=np.uint16)
-    A = np.equal(
-        np.expand_dims(vp, axis=1).view(np.uint64),
-        np.expand_dims(vw, axis=0).view(np.uint64)
-    )
-    A = np.squeeze(A)
-
-    ft = time.time()
-    #print(f"Time to compute A (dense): {ft-st}")
-    return A
-
-
-def D_matrix(P,xw):
-    """
-    This function will compute the D matrix of the Formulation.
-    INPUT:
-        :P (dict)
-        :xw (list)
-    RETURN: D matrix (np.matrix)
-    """
-    st = time.time()
-    
-    row_list = [(p,w) for p in P.keys() for w in P[p][4].keys()]
-    col_list = [(p,w) for (r,(p,w),m) in xw]
-    vp = np.array(row_list, dtype=np.uint16)
-    vw = np.array(col_list, dtype=np.uint16)
-    #print(f'Size: {sizeof_fmt(len(vp) * len(vw))}')
-    D = np.equal(
-        np.expand_dims(vp, axis=1).view(np.uint32),
-        np.expand_dims(vw, axis=0).view(np.uint32)
-    )
-    D = np.squeeze(D)
-
-    ft = time.time()
-    #print(f"Time to compute D (dense): {ft-st}")
-
-    return D
-
-
-def T_matrix(R,M,xw):
-    """
-    This function will compute the T matrix of the Formulation.
-    INPUT:
-        :R (dict)
-        :M (list)
-        :xw (dict)
-    RETURN: T matrix (np.matrix)
-    """
-    st = time.time()
-    row_list = [(r,m) for r in R.keys() for m in M]
-    col_list = [(r,m) for (r,(p,w),m) in xw]
-    vp = np.array(row_list, dtype=np.uint16)
-    vw = np.array(col_list, dtype=np.uint16)
-    #print(f'Size: {sizeof_fmt(len(vp) * len(vw))}')
-    T = np.equal(
-        np.expand_dims(vp, axis=1).view(np.uint32),
-        np.expand_dims(vw, axis=0).view(np.uint32)
-    )
-    T = np.squeeze(T)
-
-    ft = time.time()
-    #print(f"Time to compute T: {ft-st}")
-
-    return T
-
-
-def B_matrix(a, b, eur):
-    st = time.time()
-    B = np.equal(
-        np.expand_dims(a, axis=1),
-        np.expand_dims(b, axis=0)
-    )
-    B = np.multiply(
-        B,
-        np.expand_dims(eur, axis=0)
-    )
-    ft = time.time()
-    #print(f"Time to compute B: {ft-st}")    
-    return B
-    
-
-def B_matrix_old(P,R,xw):
-    """
-    This function will compute the C matrix of the Formulation.
-    INPUT:
-        :P (dict)
-        :R (dict)
-        :xw (dict)
-    RETURN: B matrix (np.matrix)
-    """
-    st = time.time()
-    B = []
-    #running rows
-    for proj in P.keys():
-        #running cols
-        B_row = []
-        for col in xw:
-            if proj==col[1][0]:
-                B_row.append(R[col[0]][0])
-            else:
-                B_row.append(0)
-        B.append(B_row)
-    ft = time.time()
-    #print(f"Time to compute B (old): {ft-st}")    
-    return np.array(B)
-
-
-def matrices(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda_p,cost_min,cost_max,RS,costr_min,costr_max,av_min,av_max,rep=10,mu=1.0):
-
-    # instance generator
-    P,R = RPP_instance(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda_p,cost_min,cost_max,RS,costr_min,costr_max,av_min,av_max,rep,mu)
-    # compute planning horizon
-    #print("Compute planning horizon")
-    M = planning_horizon(P)
-    # compute decision variables sets
-    #print("Compute decision variables")
-    xp,xw = decision_variables(P,R,M)
-
-    # A matrix np.array of floats (|xp| x |xw|)
     print("Compute A")
-    #A_dense = A_matrix(xp,xw)
     st = time.time()
     va = tuple2uint(
-        [(r,p,m,0) for (r,p,m) in xp],
+        [(r.id,p.id,m.id,0) for (r,p,m) in xp],
         np.uint16,
         np.uint64
     )
     vb = tuple2uint(
-        [(r,p,m,0) for (r,(p,w),m) in xw],
+        [(r.id,w.project.id,m.id,0) for (r,w,m) in xw],
         np.uint16,
         np.uint64
     )
@@ -363,19 +240,27 @@ def matrices(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda_p,cost_m
     print(f'Size of dense A: {sizeof_fmt(len(va) * len(vb))}')
     print(f'Size of sparse A: {sizeof_fmt(A_V.nbytes + A_R.nbytes + A_C.nbytes)}')
     print(f'Density: {100 * len(A_V) / (len(va) * len(vb)):.2e}%')
-    # np.testing.assert_array_equal(A.toarray(), A_dense)
+    
+    return A
 
-    # D np.array of floats (|w| x |xw|)
+
+def D_matrix(xw,P):
+    """
+    This function will compute the D matrix of the Formulation.
+    INPUT:
+        :P (list)
+        :xw (list)
+    RETURN: D matrix (np.matrix)
+    """
     print("Compute D")
-    #D_dense = D_matrix(P,xw)
     st = time.time()
     va = tuple2uint(
-        [(p,w) for p in P.keys() for w in P[p][4].keys()],
+        [(p.id,w.id) for p in P for w in p.wp],
         np.uint16,
         np.uint32
     )
     vb = tuple2uint(
-        [(p,w) for (r,(p,w),m) in xw],
+        [(w.project.id,w.id) for (r,w,m) in xw],
         np.uint16,
         np.uint32
     )
@@ -387,19 +272,28 @@ def matrices(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda_p,cost_m
     print(f'Size of dense D: {sizeof_fmt(len(va) * len(vb))}')
     print(f'Size of sparse D: {sizeof_fmt(D_V.nbytes + D_R.nbytes + D_C.nbytes)}')
     print(f'Density: {100 * len(D_V) / (len(va) * len(vb)):.2e}%')
-    # np.testing.assert_array_equal(D.toarray(), D_dense)
+    
+    return D
 
-    # T np.array of floats (|R|·|M| x |xw|)
+
+def T_matrix(xw,R,M):
+    """
+    This function will compute the T matrix of the Formulation.
+    INPUT:
+        :R (list)
+        :M (PlanningHorizon object)
+        :xw (list)
+    RETURN: T matrix (np.matrix)
+    """
     print("Compute T")
-    #T_dense = T_matrix(R,M,xw)
     st = time.time()
     va = tuple2uint(
-        [(r,m) for r in R.keys() for m in M],
+        [(r.id,m.id) for r in R for m in M.sequence],
         np.uint16,
         np.uint32
     )
     vb = tuple2uint(
-        [(r,m) for (r,(p,w),m) in xw],
+        [(r.id,m.id) for (r,w,m) in xw],
         np.uint16,
         np.uint32
     )
@@ -411,27 +305,23 @@ def matrices(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda_p,cost_m
     print(f'Size of dense T: {sizeof_fmt(len(va) * len(vb))}')
     print(f'Size of sparse T: {sizeof_fmt(T_V.nbytes + T_R.nbytes + T_C.nbytes)}')
     print(f'Density: {100 * len(T_V) / (len(va) * len(vb)):.2e}%')
-    # np.testing.assert_array_equal(T.toarray(), T_dense)
 
-    # target is t vector in the formulation (|xp| dim)
-    #print("Compute target")
-    t = target_vector(xp,R,P)
+    return T
 
-    # dedication of each work package (|w|)
-    #print("Compute d")
-    d = dedication_vector(P) 
 
-    # tau vector (|R|·|M|) maximum hours per each month and staff researcher
-    #print("Compute tau")
-    tau = tau_vector(R,M)
-
-    # B np.array of floats (|P| x |xw|)
+def B_matrix(xw, P):
+    """
+    This function will compute the B matrix of the Formulation.
+    INPUT:
+        :P (list)
+        :xw (list)
+    RETURN: B matrix (np.matrix)
+    """
     print("Compute B")
     st = time.time()
-    va = np.array(list(P.keys()))
-    vb = np.array([p for (r,(p,w),m) in xw])
-    vr = np.array([R[r][0] for (r,(p,w),m) in xw])
-    #B_dense = B_matrix(va, vb, vr)
+    va = np.array([p.id for p in P])
+    vb = np.array([w.project.id for (r,w,m) in xw])
+    vr = np.array([r.cost for (r,w,m) in xw])
     size, vac, vbc = count_equal(va, vb)
     _, B_R, B_C = coo(va, vb, size, vac, vbc)
     B_V = vr[B_C]
@@ -442,42 +332,60 @@ def matrices(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda_p,cost_m
     print(f'Size of dense B: {sizeof_fmt(8 * len(va) * len(vb))}')
     print(f'Size of sparse B: {sizeof_fmt(B_V.nbytes + B_R.nbytes + B_C.nbytes)}')
     print(f'Density: {100 * len(B_V) / (len(va) * len(vb)):.2e}%')
-    # np.testing.assert_array_equal(B.toarray(), B_dense)
+    
+    return B
 
-    # b vector (|P|) budget per each project
-    #print("Compute b")
+def matrices(P,R):
+
+    # compute planning horizon
+    #print("Compute planning horizon")
+    M = planning_horizon(P)
+    # compute decision variables sets
+    #print("Compute decision variables")
+    xp,xw = decision_variables(P)
+
+    # A matrix np.array of floats (|xp| x |xw|)
+    A = A_matrix(xw,xp)
+
+    # D np.array of floats (|w| x |xw|)
+    D = D_matrix(xw,P)
+
+    # T np.array of floats (|R|·|M| x |xw|)
+    T = T_matrix(xw,R,M)
+
+    # target is t vector in the formulation (|xp| dim)
+    #print("Compute target")
+    t = target_vector(xp)
+
+    # dedication of each work package (|w|)
+    #print("Compute d")
+    d = dedication_vector(P) 
+
+    # tau vector (|R|·|M|) maximum hours per each month and staff researcher
+    #print("Compute tau")
+    tau = tau_vector(R,M)
+
+    # B np.array of floats (|P| x |xw|)
+    B = B_matrix(xw,P)
+
+    # b np.array of floats (|P|)
     b = b_vector(P)
 
-    return P,R,M,xp,xw,A,t,D,d,T,tau,B,b
+    return M,xp,xw,A,t,D,d,T,tau,B,b
 
-
-def print_project_info(P):
-
-    for p in P.keys():
-        print(f"Project ID: {p} \t SD: {P[p][0]} \t Duration: {P[p][1]} \t Dedication: {P[p][2]} \t Budget: {P[p][3]:.2f}")
-        for w in P[p][4].keys():
-            print(f"\t WP ID: {w} \t SD: {P[p][4][w][0]} \t Duration: {P[p][4][w][1]} \t Dedication: {P[p][4][w][2]}")
-
-    return None
-
-def print_researcher_info(R,P):
-
-    for r in R.keys():
-        print(f"Researcher ID: {r} \t Cost: {R[r][0]:.2f} \t Availability: {R[r][1]}")
-        for p in R[r][2].keys():
-            #print(f"\t Project ID: {p}")
-            for m in R[r][2][p].keys():
-                #print(f"\t \t Month: {m} \t Target: {R[r][2][p][m]}")
-                print(f"\t Project ID: {p} \t Target: {R[r][2][p][m]}")
-                break
-
-    return None
 
 ###############################################################################
 ################################## Test #######################################
 
 if __name__ == '__main__':
     
-    from instance_gen import RPP_instance,project_duration
-    data = matrices(1000,1,25,38.07,4.70,0.000757,1000,0.179,26.35,44.33,0.39,17.16,54.01,120,140,rep=3)
-    P,R,M,xp,xw,A,t,D,d,T,tau,B,b = data
+    print("---------------MAIN------------------")
+    path_ = os.getcwd()
+    directory_ = 'data'
+    file_ = 'researchers.csv'
+    file_path = os.path.join(path_,directory_,file_)
+    file_projects = os.path.join(path_,directory_,'projects')
+    R = read_researcher(file_path)
+    P = instance_projects(file_projects,R)
+    data = matrices(P,R)
+    M,xp,xw,A,t,D,d,T,tau,B,b = data
