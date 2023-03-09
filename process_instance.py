@@ -276,6 +276,39 @@ def A_matrix_dense(xw,xp):
     return A
 
 
+def A_matrix_slow(xw,xp):
+    """
+    This function will compute the A matrix of the Formulation.
+    INPUT:
+        :xp (list)
+        :xw (list)
+    RETURN: A matrix (np.matrix)
+    """
+    print("Compute A")
+    st = time.time()
+    va = tuple2uint(
+        [(r.id,p.id,m.id,0) for (r,p,m) in xp],
+        np.uint16,
+        np.uint64
+    )
+    vb = tuple2uint(
+        [(r.id,w.project.id,m.id,0) for (r,w,m) in xw],
+        np.uint16,
+        np.uint64
+    )
+    A = np.equal(
+        np.expand_dims(va, axis=1).view(np.uint64),
+        np.expand_dims(vb, axis=0).view(np.uint64)
+    )
+    A = np.squeeze(A)
+    ft = time.time()
+    print(f"Time to compute A (dense): {ft-st}")
+    print(f'Size of theoretical dense A: {sizeof_fmt(len(va) * len(vb))}')
+    print(f'Size of A: {sizeof_fmt(A.nbytes)}')
+    
+    return A
+
+
 def D_matrix(xw,P):
     """
     This function will compute the D matrix of the Formulation.
