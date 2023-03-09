@@ -135,7 +135,7 @@ if __name__ == '__main__':
     
     #data
     R,P,M,xp,xw,A,t,D,d,T,tau,B,b = definitions_generation(researchers_file_path,projects_folder)
-
+    
     #model
     model_par = (args.a,args.b,args.g,args.m)
     variables = (xp,xw)
