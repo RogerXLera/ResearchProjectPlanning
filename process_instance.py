@@ -243,6 +243,38 @@ def A_matrix(xw,xp):
     
     return A
 
+def A_matrix_dense(xw,xp):
+    """
+    This function will compute the A matrix of the Formulation.
+    INPUT:
+        :xp (list)
+        :xw (list)
+    RETURN: A matrix (np.matrix)
+    """
+    print("Compute A")
+    st = time.time()
+    va = tuple2uint(
+        [(r.id,p.id,m.id,0) for (r,p,m) in xp],
+        np.uint16,
+        np.uint64
+    )
+    vb = tuple2uint(
+        [(r.id,w.project.id,m.id,0) for (r,w,m) in xw],
+        np.uint16,
+        np.uint64
+    )
+    A = np.equal(
+        np.expand_dims(va, axis=1).view(np.uint64),
+        np.expand_dims(vb, axis=0).view(np.uint64)
+    )
+    A = np.squeeze(A)
+    ft = time.time()
+    print(f"Time to compute A (dense): {ft-st}")
+    print(f'Size of theoretical dense A: {sizeof_fmt(len(va) * len(vb))}')
+    print(f'Size of A: {sizeof_fmt(A.nbytes)}')
+    
+    return A
+
 
 def D_matrix(xw,P):
     """
@@ -272,6 +304,38 @@ def D_matrix(xw,P):
     print(f'Size of dense D: {sizeof_fmt(len(va) * len(vb))}')
     print(f'Size of sparse D: {sizeof_fmt(D_V.nbytes + D_R.nbytes + D_C.nbytes)}')
     print(f'Density: {100 * len(D_V) / (len(va) * len(vb)):.2e}%')
+    
+    return D
+
+def D_matrix_dense(xw,P):
+    """
+    This function will compute the D matrix of the Formulation.
+    INPUT:
+        :P (list)
+        :xw (list)
+    RETURN: D matrix (np.matrix)
+    """
+    print("Compute D")
+    st = time.time()
+    va = tuple2uint(
+        [(p.id,w.id) for p in P for w in p.wp],
+        np.uint16,
+        np.uint32
+    )
+    vb = tuple2uint(
+        [(w.project.id,w.id) for (r,w,m) in xw],
+        np.uint16,
+        np.uint32
+    )
+    D = np.equal(
+        np.expand_dims(va, axis=1).view(np.uint32),
+        np.expand_dims(vb, axis=0).view(np.uint32)
+    )
+    D = np.squeeze(D)
+    ft = time.time()
+    print(f"Time to compute D (dense): {ft-st}")
+    print(f'Size of theoretical dense D: {sizeof_fmt(len(va) * len(vb))}')
+    print(f'Size of D: {sizeof_fmt(D.nbytes)}')
     
     return D
 
@@ -308,6 +372,40 @@ def T_matrix(xw,R,M):
 
     return T
 
+def T_matrix_dense(xw,R,M):
+    """
+    This function will compute the T matrix of the Formulation.
+    INPUT:
+        :R (list)
+        :M (PlanningHorizon object)
+        :xw (list)
+    RETURN: T matrix (np.matrix)
+    """
+    print("Compute T")
+    st = time.time()
+    va = tuple2uint(
+        [(r.id,m.id) for r in R for m in M.sequence],
+        np.uint16,
+        np.uint32
+    )
+    vb = tuple2uint(
+        [(r.id,m.id) for (r,w,m) in xw],
+        np.uint16,
+        np.uint32
+    )
+    T = np.equal(
+        np.expand_dims(va, axis=1).view(np.uint32),
+        np.expand_dims(vb, axis=0).view(np.uint32)
+    )
+    T = np.squeeze(T)
+    ft = time.time()
+    print(f"Time to compute T (dense): {ft-st}")
+    print(f'Size of theoretical dense T: {sizeof_fmt(len(va) * len(vb))}')
+    print(f'Size of D: {sizeof_fmt(T.nbytes)}')
+    
+    return T
+
+
 
 def B_matrix(xw, P):
     """
@@ -335,6 +433,35 @@ def B_matrix(xw, P):
     
     return B
 
+def B_matrix_dense(xw, P):
+    """
+    This function will compute the B matrix of the Formulation.
+    INPUT:
+        :P (list)
+        :xw (list)
+    RETURN: B matrix (np.matrix)
+    """
+    print("Compute B")
+    st = time.time()
+    va = np.array([p.id for p in P])
+    vb = np.array([w.project.id for (r,w,m) in xw])
+    vr = np.array([r.cost for (r,w,m) in xw])
+    B = np.equal(
+        np.expand_dims(va, axis=1),
+        np.expand_dims(vb, axis=0)
+    )
+    B = np.multiply(
+        B,
+        np.expand_dims(vr, axis=0)
+    )
+    
+    ft = time.time()
+    print(f"Time to compute B (dense): {ft-st}")
+    print(f'Size of theoretical dense B: {sizeof_fmt(64 * len(va) * len(vb))}')
+    print(f'Size of B: {sizeof_fmt(B.nbytes)}')
+    
+    return B
+
 def matrices(P,R):
 
     # compute planning horizon
@@ -345,13 +472,16 @@ def matrices(P,R):
     xp,xw = decision_variables(P)
 
     # A matrix np.array of floats (|xp| x |xw|)
-    A = A_matrix(xw,xp)
+    #A = A_matrix(xw,xp)
+    A = A_matrix_dense(xw,xp)
 
     # D np.array of floats (|w| x |xw|)
-    D = D_matrix(xw,P)
+    #D = D_matrix(xw,P)
+    D = D_matrix_dense(xw,P)
 
     # T np.array of floats (|R|·|M| x |xw|)
-    T = T_matrix(xw,R,M)
+    #T = T_matrix(xw,R,M)
+    T = T_matrix_dense(xw,R,M)
 
     # target is t vector in the formulation (|xp| dim)
     #print("Compute target")
@@ -366,7 +496,8 @@ def matrices(P,R):
     tau = tau_vector(R,M)
 
     # B np.array of floats (|P| x |xw|)
-    B = B_matrix(xw,P)
+    #B = B_matrix(xw,P)
+    B = B_matrix_dense(xw,P)
 
     # b np.array of floats (|P|)
     b = b_vector(P)
