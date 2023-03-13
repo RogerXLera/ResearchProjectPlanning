@@ -78,6 +78,36 @@ def decision_variables(P):
     
     return xp,xw
 
+def decision_variables_2(P,R):
+    """
+    This function computes the decision variables list Xp and Xw
+    INPUT:
+        P: (list) of all projects
+    RETURN: 
+        xp (list) 
+        xw (list)
+    """
+    xp = []
+    xw = []
+
+    for r in R:
+        for p in P:
+            # xw
+            if r in p.researchers:
+                for w in p.wp:
+                    pw = Period(id_= 0,start=w.start,end=w.end)
+                    Mw = PlanningHorizon(period=pw)
+                    for m in Mw.sequence:
+                        xw.append((r,w,m))
+                #xp
+                sd,ed = p.date()
+                pp = Period(id_= 0,start=sd,end=ed)
+                Mp = PlanningHorizon(period=pp)
+                for m in Mp.sequence:
+                    xp.append((r,p,m))
+    
+    return xp,xw
+
 
 def target_vector(xp):
     """
@@ -284,26 +314,21 @@ def A_matrix_slow(xw,xp):
         :xw (list)
     RETURN: A matrix (np.matrix)
     """
-    print("Compute A")
+    print("Compute A slow")
     st = time.time()
-    va = tuple2uint(
-        [(r.id,p.id,m.id,0) for (r,p,m) in xp],
-        np.uint16,
-        np.uint64
-    )
-    vb = tuple2uint(
-        [(r.id,w.project.id,m.id,0) for (r,w,m) in xw],
-        np.uint16,
-        np.uint64
-    )
-    A = np.equal(
-        np.expand_dims(va, axis=1).view(np.uint64),
-        np.expand_dims(vb, axis=0).view(np.uint64)
-    )
-    A = np.squeeze(A)
+    A = []
+    for (r1,p1,m1) in xp:
+        A_row = []
+        for (r2,w2,m2) in xw:
+            if r1.id == r2.id and p1.id == w2.project.id and m1.id == m2.id:
+                A_row.append(1)
+            else:
+                A_row.append(0)
+        A.append(A_row)
+    A = np.array(A)
     ft = time.time()
-    print(f"Time to compute A (dense): {ft-st}")
-    print(f'Size of theoretical dense A: {sizeof_fmt(len(va) * len(vb))}')
+
+    print(f"Time to compute A (slow): {ft-st}")
     print(f'Size of A: {sizeof_fmt(A.nbytes)}')
     
     return A
@@ -372,6 +397,34 @@ def D_matrix_dense(xw,P):
     
     return D
 
+def D_matrix_slow(xw,P):
+    """
+    This function will compute the D matrix of the Formulation.
+    INPUT:
+        :P (list)
+        :xw (list)
+    RETURN: D matrix (np.matrix)
+    """
+    print("Compute D slow")
+    st = time.time()
+    D = []
+    for p1 in P:
+        for w1 in p1.wp:
+            D_row = []
+            for (r2,w2,m2) in xw:
+                if w1.id == w2.id:
+                    D_row.append(1)
+                else:
+                    D_row.append(0)
+            D.append(D_row)
+    D = np.array(D)
+    ft = time.time()
+
+    print(f"Time to compute D (slow): {ft-st}")
+    print(f'Size of D: {sizeof_fmt(D.nbytes)}')
+    
+    return D
+
 
 def T_matrix(xw,R,M):
     """
@@ -434,7 +487,36 @@ def T_matrix_dense(xw,R,M):
     ft = time.time()
     print(f"Time to compute T (dense): {ft-st}")
     print(f'Size of theoretical dense T: {sizeof_fmt(len(va) * len(vb))}')
-    print(f'Size of D: {sizeof_fmt(T.nbytes)}')
+    print(f'Size of T: {sizeof_fmt(T.nbytes)}')
+    
+    return T
+
+
+def T_matrix_slow(xw,R,M):
+    """
+    This function will compute the T matrix of the Formulation.
+    INPUT:
+        :R (list)
+        :M (PlanningHorizon object)
+        :xw (list)
+    RETURN: T matrix (np.matrix)
+    """
+    print("Compute T")
+    st = time.time()
+    T = []
+    for r1 in R:
+        for m1 in M.sequence:
+            T_row = []
+            for (r2,w2,m2) in xw:
+                if r1.id == r2.id and m1.id == m2.id:
+                    T_row.append(1)
+                else:
+                    T_row.append(0)
+            T.append(T_row)
+    T = np.array(T)
+    ft = time.time()
+    print(f"Time to compute T (slow): {ft-st}")
+    print(f'Size of T: {sizeof_fmt(T.nbytes)}')
     
     return T
 
@@ -495,6 +577,33 @@ def B_matrix_dense(xw, P):
     
     return B
 
+def B_matrix_slow(xw, P):
+    """
+    This function will compute the B matrix of the Formulation.
+    INPUT:
+        :P (list)
+        :xw (list)
+    RETURN: B matrix (np.matrix)
+    """
+    print("Compute B")
+    st = time.time()
+    B = []
+    for p1 in P:
+        B_row = []
+        for (r2,w2,m2) in xw:
+            if p1.id == w2.project.id:
+                B_row.append(r2.cost)
+            else:
+                B_row.append(0.0)
+        B.append(B_row)
+    B = np.array(B)
+    
+    ft = time.time()
+    print(f"Time to compute B (dense): {ft-st}")
+    print(f'Size of B: {sizeof_fmt(B.nbytes)}')
+    
+    return B
+
 def matrices(P,R):
 
     # compute planning horizon
@@ -502,38 +611,75 @@ def matrices(P,R):
     M = planning_horizon(P)
     # compute decision variables sets
     #print("Compute decision variables")
-    xp,xw = decision_variables(P)
+    xp1,xw1 = decision_variables(P)
+    xp,xw = decision_variables_2(P,R)
+    print("Length xp1: ",len(xp1))
+    print("Length xw1: ",len(xw1))
+    print("Length xp: ",len(xp))
+    print("Length xw: ",len(xw))
 
     # A matrix np.array of floats (|xp| x |xw|)
-    #A = A_matrix(xw,xp)
-    A = A_matrix_dense(xw,xp)
+    Aq = A_matrix(xw,xp)
+    #A = A_matrix_dense(xw,xp)
+    A = A_matrix_slow(xw,xp)
+    print("Equal matrices? ",np.testing.assert_array_equal(Aq.toarray(), A))
 
     # D np.array of floats (|w| x |xw|)
-    #D = D_matrix(xw,P)
-    D = D_matrix_dense(xw,P)
+    Dq = D_matrix(xw,P)
+    #D = D_matrix_dense(xw,P)
+    D = D_matrix_slow(xw,P)
+    print("Equal matrices? ",np.testing.assert_array_equal(Dq.toarray(), D))
 
     # T np.array of floats (|R|·|M| x |xw|)
-    #T = T_matrix(xw,R,M)
-    T = T_matrix_dense(xw,R,M)
+    Tq = T_matrix(xw,R,M)
+    #T = T_matrix_dense(xw,R,M)
+    T = T_matrix_slow(xw,R,M)
+    print("Equal matrices? ",np.testing.assert_array_equal(Tq.toarray(), T))
 
     # target is t vector in the formulation (|xp| dim)
     #print("Compute target")
+    
     t = target_vector(xp)
+    """
+    for i in range(len(t)):
+        print(t[i])
 
+    print(len(t))
+    """
     # dedication of each work package (|w|)
     #print("Compute d")
-    d = dedication_vector(P) 
+    d = dedication_vector(P)
+    for i in range(len(d)):
+        print(d[i])
+
+    print(len(d))
+
 
     # tau vector (|R|·|M|) maximum hours per each month and staff researcher
     #print("Compute tau")
     tau = tau_vector(R,M)
+    """
+    for i in range(len(tau)):
+        print(tau[i])
+
+    print(len(tau))
+    """
+
 
     # B np.array of floats (|P| x |xw|)
-    #B = B_matrix(xw,P)
-    B = B_matrix_dense(xw,P)
+    Bq = B_matrix(xw,P)
+    #B = B_matrix_dense(xw,P)
+    B = B_matrix_slow(xw,P)
+    print("Equal matrices? ",np.testing.assert_array_equal(Bq.toarray(), B))
 
     # b np.array of floats (|P|)
     b = b_vector(P)
+    """
+    for i in range(len(t)):
+        print(t[i])
+
+    print(len(t))
+    """
 
     return M,xp,xw,A,t,D,d,T,tau,B,b
 
