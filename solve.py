@@ -69,7 +69,7 @@ def solve_problem(problem,x,u,v):
         We solve the problem
     """
     start_time = time.time()
-    problem.solve(solver=args.solver,verbose=True,cplex_params={})
+    problem.solve(solver=args.solver,verbose=True,cplex_params={},)
     finish_time = time.time()
     obj_value = problem.value
     print("The optimal value is", obj_value)
