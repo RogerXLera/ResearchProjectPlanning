@@ -132,6 +132,29 @@ def target_vector(xp):
     
     return np.array(target)
 
+def target_vector_int(xp):
+    """
+    This function will return the target vector.
+    INPUT:
+        :xp (list)
+    RETURN: 
+        target (np.array) 
+    """
+    
+    target = [] # list containing all the values of the target vector
+        
+    for (r,p,m) in xp:
+        # target hours per researcher
+        for t in p.target:
+            if t.researcher.id == r.id and in_period(t.period,m):
+                target.append(int(t.value * r.time))
+                break
+
+    if len(xp) != len(target):
+        raise ValueError(f"Target vector (|t| = {len(target)}) has not the same dimension as Xp (|Xp| = {len(xp)})")
+    
+    return np.array(target)
+
 
 def dedication_vector(P):
     """
@@ -639,21 +662,23 @@ def matrices(P,R):
     # target is t vector in the formulation (|xp| dim)
     #print("Compute target")
     
-    t = target_vector(xp)
-    """
+    #t = target_vector(xp)
+    t = target_vector_int(xp)
+    
     for i in range(len(t)):
         print(t[i])
 
     print(len(t))
-    """
+    
     # dedication of each work package (|w|)
     #print("Compute d")
     d = dedication_vector(P)
+    """
     for i in range(len(d)):
         print(d[i])
 
     print(len(d))
-
+    """
 
     # tau vector (|R|·|M|) maximum hours per each month and staff researcher
     #print("Compute tau")
