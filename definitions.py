@@ -390,7 +390,7 @@ class PlanningHorizon:
         
 
     def __str__(self):
-        string = f"ID: {self.id} Start: {str(self.start)}\n"
+        string = f"Planning Horizon: {self.id} \n\t Start: {str(self.start)}\n"
         string += f"\t End: {str(self.end)}"
 
     def __repr__(self):

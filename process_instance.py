@@ -35,7 +35,7 @@ def planning_horizon(P):
         if ed.id > date_[1]:
             date_[1] = sd.id
             ed_t = ed
-    pe = Period(id_= 0,start=sd,end=ed)
+    pe = Period(id_= 0,start=sd_t,end=ed_t)
     return PlanningHorizon(period=pe)
 
 
@@ -632,32 +632,28 @@ def matrices(P,R):
     # compute planning horizon
     #print("Compute planning horizon")
     M = planning_horizon(P)
+    
     # compute decision variables sets
     #print("Compute decision variables")
-    xp1,xw1 = decision_variables(P)
-    xp,xw = decision_variables_2(P,R)
-    print("Length xp1: ",len(xp1))
-    print("Length xw1: ",len(xw1))
-    print("Length xp: ",len(xp))
-    print("Length xw: ",len(xw))
+    xp,xw = decision_variables(P)
 
     # A matrix np.array of floats (|xp| x |xw|)
-    Aq = A_matrix(xw,xp)
+    A = A_matrix(xw,xp)
     #A = A_matrix_dense(xw,xp)
-    A = A_matrix_slow(xw,xp)
-    print("Equal matrices? ",np.testing.assert_array_equal(Aq.toarray(), A))
+    #A = A_matrix_slow(xw,xp)
+    #print("Equal matrices? ",np.testing.assert_array_equal(Aq.toarray(), A))
 
     # D np.array of floats (|w| x |xw|)
-    Dq = D_matrix(xw,P)
+    D = D_matrix(xw,P)
     #D = D_matrix_dense(xw,P)
-    D = D_matrix_slow(xw,P)
-    print("Equal matrices? ",np.testing.assert_array_equal(Dq.toarray(), D))
+    #D = D_matrix_slow(xw,P)
+    #print("Equal matrices? ",np.testing.assert_array_equal(Dq.toarray(), D))
 
     # T np.array of floats (|R|·|M| x |xw|)
-    Tq = T_matrix(xw,R,M)
+    T = T_matrix(xw,R,M)
     #T = T_matrix_dense(xw,R,M)
-    T = T_matrix_slow(xw,R,M)
-    print("Equal matrices? ",np.testing.assert_array_equal(Tq.toarray(), T))
+    #T = T_matrix_slow(xw,R,M)
+    #print("Equal matrices? ",np.testing.assert_array_equal(Tq.toarray(), T))
 
     # target is t vector in the formulation (|xp| dim)
     #print("Compute target")
@@ -665,46 +661,22 @@ def matrices(P,R):
     #t = target_vector(xp)
     t = target_vector_int(xp)
     
-    for i in range(len(t)):
-        print(t[i])
-
-    print(len(t))
-    
     # dedication of each work package (|w|)
     #print("Compute d")
     d = dedication_vector(P)
-    """
-    for i in range(len(d)):
-        print(d[i])
-
-    print(len(d))
-    """
 
     # tau vector (|R|·|M|) maximum hours per each month and staff researcher
     #print("Compute tau")
     tau = tau_vector(R,M)
-    """
-    for i in range(len(tau)):
-        print(tau[i])
-
-    print(len(tau))
-    """
-
 
     # B np.array of floats (|P| x |xw|)
-    Bq = B_matrix(xw,P)
+    B = B_matrix(xw,P)
     #B = B_matrix_dense(xw,P)
-    B = B_matrix_slow(xw,P)
+    #B = B_matrix_slow(xw,P)
     print("Equal matrices? ",np.testing.assert_array_equal(Bq.toarray(), B))
 
     # b np.array of floats (|P|)
     b = b_vector(P)
-    """
-    for i in range(len(t)):
-        print(t[i])
-
-    print(len(t))
-    """
 
     return M,xp,xw,A,t,D,d,T,tau,B,b
 
