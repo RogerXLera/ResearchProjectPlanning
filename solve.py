@@ -69,7 +69,7 @@ def solve_problem(problem,x,u,v):
         We solve the problem
     """
     start_time = time.time()
-    problem.solve(solver=args.solver,verbose=True,cplex_params={},cplex_filename=f"model_new.lp")
+    problem.solve(solver=args.solver,verbose=True,cplex_params={})
     finish_time = time.time()
     obj_value = problem.value
     print("The optimal value is", obj_value)
@@ -94,53 +94,6 @@ def print_analytics(z,x,B,A,P,t):
 
     return None
         
-def print_model(elements,file_name):
-    """
-        Print all elements in the model
-    """
-    R,P,M,xp,xw,A,t,D,d,T,tau,B,b = elements
-    lines = ["---------------- A ----------------\n"]
-    for i in range(np.shape(A)[0]):
-        for j in range(np.shape(A)[1]):
-            lines.append(f"{A[i][j]:.3f}\n")
-
-    lines.append("---------------- t ----------------\n")
-    for i in range(len(t)):
-        lines.append(f"{t[i]:.3f}\n")
-
-    lines.append("---------------- D ----------------\n")
-    for i in range(np.shape(D)[0]):
-        for j in range(np.shape(D)[1]):
-            lines.append(f"{D[i][j]:.3f}\n")
-
-    lines.append("---------------- d ----------------\n")
-    for i in range(len(d)):
-        lines.append(f"{d[i]:.3f}\n")
-
-    lines.append("---------------- T ----------------\n")
-    for i in range(np.shape(T)[0]):
-        for j in range(np.shape(T)[1]):
-            lines.append(f"{T[i][j]:.3f}\n")
-
-    lines.append("---------------- tau ----------------\n")
-    for i in range(len(tau)):
-        lines.append(f"{tau[i]:.3f}\n")
-
-    lines.append("---------------- B ----------------\n")
-    for i in range(np.shape(B)[0]):
-        for j in range(np.shape(B)[1]):
-            lines.append(f"{B[i][j]:.3f}\n")
-
-    lines.append("---------------- b ----------------\n")
-    for i in range(len(b)):
-        lines.append(f"{b[i]:.3f}\n")
-
-    with open(file_name,'w') as f_:
-        
-        f_.writelines(lines)
-
-
-    return None    
 
 if __name__ == '__main__':
 
@@ -191,8 +144,6 @@ if __name__ == '__main__':
 
     #solve
     value,xx,uu,vv = solve_problem(prob,x,u,v)
-    elements = R,P,M,xp,xw,A,t,D,d,T,tau,B,b
-    print_model(elements,'model_new.txt')
 
 
     

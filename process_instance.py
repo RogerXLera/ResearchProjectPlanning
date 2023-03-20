@@ -673,7 +673,7 @@ def matrices(P,R):
     B = B_matrix(xw,P)
     #B = B_matrix_dense(xw,P)
     #B = B_matrix_slow(xw,P)
-    print("Equal matrices? ",np.testing.assert_array_equal(Bq.toarray(), B))
+    #print("Equal matrices? ",np.testing.assert_array_equal(Bq.toarray(), B))
 
     # b np.array of floats (|P|)
     b = b_vector(P)
