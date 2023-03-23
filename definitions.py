@@ -83,6 +83,7 @@ class Researcher:
         self.cost = cost
         self.time = time
         self.contract = contract
+        self.projects = []
 
     def __str__(self):
         if self.contract:
@@ -162,9 +163,11 @@ class Period:
         if type(id_) != int:
             raise ValueError(f"Period ID ({id_}) must be an int.")
         if isinstance(start,Month) == False:
-            raise ValueError(f"Period start month ({start}) must be a month.")
+            raise ValueError(f"Period start month ({start.id}) must be a month.")
         if isinstance(end,Month) == False:
-            raise ValueError(f"Period end month ({end}) must be a month.")
+            raise ValueError(f"Period end month ({end.id}) must be a month.")
+        if start.id > end.id:
+            raise ValueError(f"Start month ({start.id}) must be sooner than end month ({end.id})")
 
     def __init__(self,id_,start,end):
         
@@ -223,6 +226,17 @@ class Period:
 
         list_.insert(0,self) #if the month is the earliest, we add it in the beggining of the list
         return 0
+
+    def duration(self,N_max=1e6):
+        """
+            Returns the duration of a period in number of months
+        """
+        
+        sm = self.start.month #starting month
+        sy = self.start.year #starting year
+        em = self.end.month #starting month
+        ey = self.end.year #starting year
+        return (ey - sy)*12 + (em - sm) + 1
 
 class Project:
     """

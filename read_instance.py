@@ -106,6 +106,7 @@ def read_project(file_,projects,researchers):
         for t in target_:
             r = identify_researcher(t[0],researchers)
             r.add(p.researchers)
+            r.projects.append(p)
             i = 0
             for pe in p.period:
                 i += 1

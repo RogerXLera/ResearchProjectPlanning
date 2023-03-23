@@ -74,12 +74,10 @@ def project_structure(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda
             ed_w = Month(month=end_month,year=end_year)
 
             wp_ = WorkPackage(id_=wp_id,project=project,start_month=st_w,end_month=ed_w,dedication=ded_w)
-            wp.add(project.wp)
+            wp_.add(project.wp)
 
         ded_p = project.dedication()
         project.budget = mu*ded_p*rd.uniform(cost_min,cost_max)
-        #dur_p = project_duration(W)
-        #P.update({p:(sd_p,dur_p,ded_p,bud_p,W)})
         P.append(project)
     
     return P
@@ -89,53 +87,56 @@ def researcher_structure(P,RS,cost_min,cost_max,av_min,av_max,rep):
     """
     This function generates the researchers structure.
     """
-    R = {}
+    R = []
     r = 1
 
-    for p in P.keys():
+    for p in P:
         
-        d_p = P[p][2] # dedication of project p
-        d_p_prima = 0
-        sd_p = P[p][0]
-        dur_p = P[p][1]
+        d_p = p.dedication() # dedication of project p
+        d_p_prima = 0 # current project dedication satisfied
+        sd_p,ed_p = p.date() # starting date and endind date
+        per_p = Period(id_=0,sd_p,ed_p)
+        dur_p = per_p.duration()
+        per_p.add(p.period)
         while d_p > d_p_prima:
             wl = 0
             create_res = False
-            n_res = len(R.keys())
+            n_res = len(R)
             if n_res > rep:
                 rep_ = rep
             else:
                 rep_ = n_res
 
             for i in range(0,rep_):
-                res = rd.randint(1,n_res)
+                r_ = rd.randint(0,n_res-1)
+                res = R[r_] #Researcher object
                 wl_r = 0
-                proj_inv = list(R[res][2].keys())
-                if p not in proj_inv:
+                if p not in res.projects:
                     
-                    for proj in R[res][2].keys():
+                    for proj in res.projects:
                         t_p = 0 # eval target per project p of researcher r
-        
-                        for m in range(sd_p,sd_p+dur_p):
-                            try:
-                                target_m = R[res][2][proj][m]
-                            except:
-                                target_m = 0
-                            t_p += target_m
 
+                        cm = sd_p # current month
+                        m = 0
+                        while m < dur_p:
+                            m += 1
+                            for target in proj.target:
+                                if target.researcher == res and target.period.check(cm):
+                                    t_p += target.value
+                                    break
+                            if cm.month == 12:
+                                cm = Month(month=1,year=cm.year+1)
+                            else:
+                                cm = Month(month=cm.month+1,year=cm.year)
                         
-                        wl_r += (t_p/R[res][1])/dur_p
+                        wl_r += t_p/dur_p
 
-                    #if 1 - np.exp(-wl_r/RS) < rd.random():
                     if rd.random() < RS - wl_r:
-                        #print(f"Involve Res r: {res}")
                         t_p = 0
                         target = {}
                         t_p_ = rd.uniform(0,1-wl_r)
+                        target = 
                         for m in range(sd_p,sd_p+dur_p):
-                            #rand = rd.randint(0,R[res][1]-round(wl_r*R[res][1]))
-                            #t_p += rand
-                            #target.update({m:rand})
                             t_p += round(R[res][1]*t_p_)
                             target.update({m:round(R[res][1]*t_p_)})
 
