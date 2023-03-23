@@ -294,6 +294,15 @@ class Project:
 
         return sd,ed
 
+    def dedication(self):
+        """
+            This function returns the total dedication required by the project
+        """
+        ded = 0
+        for w in self.wp:
+            ded += w.dedication
+
+        return ded
     
 
 class Target:
