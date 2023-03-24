@@ -39,7 +39,7 @@ def project_structure(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda
 
     for p in range(1,N_proj+1):
         
-        project = Project(id=p,name=f"P{p}")
+        project = Project(id_=p,name=f"P{p}")
         # update starting date 
         if p != 1: # start date of project p
             delta_m = rd.expovariate(lambda_p)
@@ -73,12 +73,15 @@ def project_structure(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda
                 end_year += 1
             ed_w = Month(month=end_month,year=end_year)
 
-            wp_ = WorkPackage(id_=wp_id,project=project,start_month=st_w,end_month=ed_w,dedication=ded_w)
+            wp_ = WorkPackage(id_=wp_id,project=project,start_month=sd_w,end_month=ed_w,dedication=ded_w)
             wp_.add(project.wp)
 
+        sd_p,ed_p = project.date() # starting date and endind date
+        per_p = Period(id_=0,start=sd_p,end=ed_p)
+        per_p.add(project.period)
         ded_p = project.dedication()
         project.budget = mu*ded_p*rd.uniform(cost_min,cost_max)
-        P.append(project)
+        project.add(P)
     
     return P
 
@@ -95,9 +98,8 @@ def researcher_structure(P,RS,cost_min,cost_max,av_min,av_max,rep):
         d_p = p.dedication() # dedication of project p
         d_p_prima = 0 # current project dedication satisfied
         sd_p,ed_p = p.date() # starting date and endind date
-        per_p = Period(id_=0,sd_p,ed_p)
+        per_p = Period(id_=0,start=sd_p,end=ed_p)
         dur_p = per_p.duration()
-        per_p.add(p.period)
         while d_p > d_p_prima:
             wl = 0
             create_res = False
@@ -132,36 +134,28 @@ def researcher_structure(P,RS,cost_min,cost_max,av_min,av_max,rep):
                         wl_r += t_p/dur_p
 
                     if rd.random() < RS - wl_r:
-                        t_p = 0
-                        target = {}
                         t_p_ = rd.uniform(0,1-wl_r)
-                        target = 
-                        for m in range(sd_p,sd_p+dur_p):
-                            t_p += round(R[res][1]*t_p_)
-                            target.update({m:round(R[res][1]*t_p_)})
+                        for period in p.period:
+                            t_p = Target(project=p,researcher=res,period=period,value=t_p_)
+                            t_p.add(p.target)
 
-                        R[res][2].update({p:target})
                         create_res = True
                         break
 
             if create_res == False:
-                #print("New res: ", r)
                 cost_r = rd.uniform(cost_min,cost_max)
                 av_r = rd.randint(av_min,av_max)
-                target = {}
-                t_p = 0
+                con_r = rd.choice([True, False])
+                res = Researcher(id_=r,name=f"R{r}",cost=cost_r,time=av_r,contract=con_r)
                 t_p_ = rd.random()
-                for m in range(sd_p,sd_p+dur_p):
-                    #rand = rd.randint(0,av_r)
-                    #t_p += rand
-                    #target.update({m:rand})
-                    t_p += round(av_r*t_p_)
-                    target.update({m:round(av_r*t_p_)})
+                for period in p.period:
+                    t_p = Target(project=p,researcher=res,period=period,value=t_p_)
+                    t_p.add(p.target)
 
-                R.update({r:[cost_r,av_r,{p:target}]})
+                res.add(R)
                 r += 1
 
-            d_p_prima += t_p
+            d_p_prima += t_p_*res.time*dur_p
 
     return R
 
@@ -179,12 +173,14 @@ def RPP_instance(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda_p,co
 
 if __name__ == '__main__':
 
-    #rd.seed(0)
+    rd.seed(0)
     st = time.time()
     P,R = RPP_instance(2,1,9,38.07,4.70,0.000757,1000,0.179,26.35,44.33,0.39,17.16,54.01,130,130,rep=3)
     ft = time.time()
     print(f"Instance generation time: {ft-st}")
-    print("N res: ", len(R.keys()))
+    print("N res: ", len(R))
 
-    for r in R.keys():
-        print(f"Researcher ID: {r}, # of projects: {len(R[r][2].keys())}")
+    for p in P:
+        print(p)
+    for r in R:
+        print(r)

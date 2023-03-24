@@ -257,7 +257,7 @@ class Project:
             raise ValueError(f"Project Id ({id_}) must be an integer.")
         if type(name) != str:
             raise ValueError(f"Project name ({name}) must be a string.")
-        if isinstance(pi,Researcher) == False:
+        if isinstance(pi,Researcher) == False and pi != None:
             raise ValueError(f"Project P.I. ({pi}) must be a Researcher.")
         if type(budget) != float and type(budget) != int:
             raise ValueError(f"Project budget ({budget}) must be a float or int.")
@@ -276,7 +276,10 @@ class Project:
         
     def __str__(self):
         string_ = f"Project: {self.name} \t ID: {self.id} \n"
-        string_ += f"\t P.I.: {self.pi.name} \t Budget: {self.budget:.2f}"
+        try:
+            string_ += f"\t P.I.: {self.pi.name} \t Budget: {self.budget:.2f}"
+        except:
+            string_ += f"\t P.I.: None \t Budget: {self.budget:.2f}"
         return string_
 
     def __repr__(self):
