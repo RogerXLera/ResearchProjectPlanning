@@ -10,6 +10,7 @@ import time
 import csv
 from definitions import * # classes Skill, Activity, TimePeriod, TimePeriodSequence, Job, User Preference
 from read_instance import read_researcher,instance_projects
+from generate_instance import RPP_instance
 from process_instance import *
 import random as rd
 
@@ -20,10 +21,8 @@ def definitions_generation(res_file_path,projects_folder):
     """
     R = read_researcher(res_file_path)
     P = instance_projects(projects_folder,R)
-    data = matrices(P,R)
-    M,xp,xw,A,t,D,d,T,tau,B,b = data
 
-    return R,P,M,xp,xw,A,t,D,d,T,tau,B,b
+    return P,R
 
 
 def ilp_model(variables,matrices,model_par):
@@ -113,18 +112,21 @@ if __name__ == '__main__':
     parser.add_argument('-S', type=float, default=0.39, help='S: Resource Strength in (0,1]: RS is interpreted as the capacity of researchers to dedicate all their time in the projects. As higher RS, more work load they will have.')
     parser.add_argument('-r', type=float, default=17.16, help='r: Minimum mean cost of a researcher (euros/hour)')
     parser.add_argument('-R', type=float, default=54.01, help='R: Maximum mean cost of a researcher (euros/hour)')
-    parser.add_argument('-v', type=int, default=120, help='v: Minimum hours available per month and researcher')
-    parser.add_argument('-V', type=int, default=140, help='V: Maximum hours available per month and researcher')
+    parser.add_argument('-v', type=int, default=130, help='v: Minimum hours available per month and researcher')
+    parser.add_argument('-V', type=int, default=130, help='V: Maximum hours available per month and researcher')
     parser.add_argument('-e', type=int, default=3, help='e: Number of repetitions to search an alternative researcher in researchers instance generator.')
     parser.add_argument('-m', type=float, default=1.0, help='m: Budget scarcity')
     parser.add_argument('-a', type=float, default=1.0, help='a: Alpha parameter')
-    parser.add_argument('-b', type=float, default=1.0, help='b: Beta parameter')
-    parser.add_argument('-g', type=float, default=1.0, help='g: Gamma parameter')
+    parser.add_argument('-b', type=float, default=0.0, help='b: Beta parameter')
+    parser.add_argument('-g', type=float, default=0.0, help='g: Gamma parameter')
     parser.add_argument('--researchers', type=str, default='researchers.csv', help='--researchers: Researchers file')
     parser.add_argument('--projects', type=str, default='projects', help='--projects: projects folder')
     parser.add_argument('--seed', type=int, default=0, help='--seed: Seed')
     parser.add_argument('--solver', type=str, choices=['CPLEX', 'GUROBI'], default='CPLEX')
     parser.add_argument('--file', help='--file: Store the results in a txt file. -f for filename', action='store_true')
+    parser.add_argument('--instance', help='--instance: Create an instance', action='store_true')
+    parser.add_argument('--robust', help='--robust: Apply a robust approximation', action='store_true')
+    parser.add_argument('-I', type=int, default=10, help='I: Number of instances')
     parser.add_argument('-f', type=str, default="results", help='f: Name of the file')
     args = parser.parse_args()
     seed_ = args.seed
@@ -132,9 +134,15 @@ if __name__ == '__main__':
 
     researchers_file_path = os.path.join(path_,wd_,args.researchers)
     projects_folder = os.path.join(path_,wd_,args.projects)
-    
+
     #data
-    R,P,M,xp,xw,A,t,D,d,T,tau,B,b = definitions_generation(researchers_file_path,projects_folder)
+    if args.instance:
+        P,R = RPP_instance(args.N,args.w,args.W,args.l,args.L,args.d,args.y,args.Y,args.c,args.C,args.S,args.r,args.R,args.v,args.V,args.e)
+    else:
+        P,R = definitions_generation(researchers_file_path,projects_folder)
+
+    data = matrices(P,R)
+    M,xp,xw,A,t,D,d,T,tau,B,b = data
     
     #model
     model_par = (args.a,args.b,args.g,args.m)

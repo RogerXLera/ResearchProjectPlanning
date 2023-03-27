@@ -9,25 +9,7 @@ import time
 import os
 from definitions import *
 
-def project_duration(W):
-    """
-    This function evaluates the project duration from the duration of its workpackages.
-    """
-    sd = np.inf
-    fd = 0
-
-    for w in W.keys():
-        sd_w = W[w][0]
-        dur_w = W[w][1]
-        if sd_w < sd:
-            sd = sd_w
-
-        if sd_w + dur_w - 1 > fd:
-            fd = sd_w + dur_w - 1
-
-    return fd - sd + 1
-
-def project_structure(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda_p,cost_min,cost_max,mu=1.0):
+def project_structure(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda_p,cost_min,cost_max):
     """
     This function generates the project structure.
     """
@@ -35,7 +17,6 @@ def project_structure(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda
     P = []
     month_p = 1
     year_p = 2000
-    wp_id = 0
 
     for p in range(1,N_proj+1):
         
@@ -53,6 +34,7 @@ def project_structure(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda
 
         month_w = sd_p.month
         year_w = sd_p.year
+        wp_id = 0
         for w in range(1,N_wp+1): # generate wps
             wp_id += 1
             dur_w = round(rd.gauss(mu=dur_mean,sigma=dur_sd))
@@ -80,7 +62,7 @@ def project_structure(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda
         per_p = Period(id_=0,start=sd_p,end=ed_p)
         per_p.add(project.period)
         ded_p = project.dedication()
-        project.budget = mu*ded_p*rd.uniform(cost_min,cost_max)
+        project.budget = ded_p*rd.uniform(cost_min,cost_max)
         project.add(P)
     
     return P
@@ -139,6 +121,7 @@ def researcher_structure(P,RS,cost_min,cost_max,av_min,av_max,rep):
                             t_p = Target(project=p,researcher=res,period=period,value=t_p_)
                             t_p.add(p.target)
 
+                        res.add(p.researchers)
                         create_res = True
                         break
 
@@ -153,6 +136,7 @@ def researcher_structure(P,RS,cost_min,cost_max,av_min,av_max,rep):
                     t_p.add(p.target)
 
                 res.add(R)
+                res.add(p.researchers)
                 r += 1
 
             d_p_prima += t_p_*res.time*dur_p
@@ -160,9 +144,9 @@ def researcher_structure(P,RS,cost_min,cost_max,av_min,av_max,rep):
     return R
 
 
-def RPP_instance(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda_p,cost_min,cost_max,RS,costr_min,costr_max,av_min,av_max,rep=10,mu=1.0):
+def RPP_instance(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda_p,cost_min,cost_max,RS,costr_min,costr_max,av_min,av_max,rep=10):
             
-    P = project_structure(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda_p,cost_min,cost_max,mu=1.0)
+    P = project_structure(N_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda_p,cost_min,cost_max)
     R = researcher_structure(P,RS,costr_min,costr_max,av_min,av_max,rep)
     
     return P,R
@@ -175,12 +159,16 @@ if __name__ == '__main__':
 
     rd.seed(0)
     st = time.time()
-    P,R = RPP_instance(2,1,9,38.07,4.70,0.000757,1000,0.179,26.35,44.33,0.39,17.16,54.01,130,130,rep=3)
+    P,R = RPP_instance(10,1,9,38.07,4.70,0.000757,1000,0.179,26.35,44.33,0.39,17.16,54.01,130,130,rep=3)
     ft = time.time()
     print(f"Instance generation time: {ft-st}")
     print("N res: ", len(R))
-
+    
     for p in P:
         print(p)
+        for w in p.wp:
+            print(f"Name: {w.name} \t Dedication: {w.dedication} \t Start: {w.start} \t End: {w.end}")
+    """
     for r in R:
         print(r)
+    """
