@@ -68,7 +68,9 @@ def solve_problem(problem,x,u,v):
         We solve the problem
     """
     start_time = time.time()
-    problem.solve(solver=args.solver,verbose=True,cplex_params={})
+    problem.solve(solver=args.solver,verbose=True,cplex_params={"barrier.limits.objrange":1e20,"barrier.display":1,
+                                                                #"barrier.limits.iteration":1e3,
+                                                                })
     finish_time = time.time()
     obj_value = problem.value
     print("The optimal value is", obj_value)

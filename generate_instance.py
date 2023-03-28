@@ -166,6 +166,12 @@ if __name__ == '__main__':
     
     for p in P:
         print(p)
+        for per in p.period:
+            print(per)
+        for r in p.researchers:
+            print(r.name)
+        for t in p.target:
+            print(t)
         for w in p.wp:
             print(f"Name: {w.name} \t Dedication: {w.dedication} \t Start: {w.start} \t End: {w.end}")
     """
