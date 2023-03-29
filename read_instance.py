@@ -146,11 +146,11 @@ if __name__ == "__main__":
     for p in P:
         print(p)
         for w in p.wp:
-            print(w)
+            print(f"Name: {w.name} \t Dedication: {w.dedication} \t Start: {w.start} \t End: {w.end}")
         for t in p.target:
             print(t)
         for r in p.researchers:
-            print(r)
+            print(r.name)
         for pe in p.period:
             print(pe)
         sd,ed = p.date()

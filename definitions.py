@@ -189,7 +189,7 @@ class Period:
         """
             Checks whether a month is within a period
         """
-        if self.start.id <= month.id and self.finish.id >= month.id:
+        if self.start.id <= month.id and self.end.id >= month.id:
             return True
         else:
             return False
@@ -355,7 +355,7 @@ class Target:
         self.value = value
         
     def __str__(self):
-        string_ = f"Target: {self.id} \t Value: {self.value} \n"
+        string_ = f"Target: {self.id} \t Value: {self.value:.2f} \n"
         string_ += f"\t Project: {self.project.name} \t Researcher: {self.researcher.name} \t Period: {str(self.period)}"
         return string_
 

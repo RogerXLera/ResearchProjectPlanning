@@ -122,6 +122,7 @@ def researcher_structure(P,RS,cost_min,cost_max,av_min,av_max,rep):
                             t_p.add(p.target)
 
                         res.add(p.researchers)
+                        res.projects.append(p)
                         create_res = True
                         break
 
@@ -137,6 +138,7 @@ def researcher_structure(P,RS,cost_min,cost_max,av_min,av_max,rep):
 
                 res.add(R)
                 res.add(p.researchers)
+                res.projects.append(p)
                 r += 1
 
             d_p_prima += t_p_*res.time*dur_p
@@ -159,22 +161,25 @@ if __name__ == '__main__':
 
     rd.seed(0)
     st = time.time()
-    P,R = RPP_instance(10,1,9,38.07,4.70,0.000757,1000,0.179,26.35,44.33,0.39,17.16,54.01,130,130,rep=3)
+    P,R = RPP_instance(2,1,9,38.07,4.70,0.000757,1000,0.179,26.35,44.33,0.39,17.16,54.01,130,130,rep=3)
     ft = time.time()
     print(f"Instance generation time: {ft-st}")
     print("N res: ", len(R))
-    
-    for p in P:
-        print(p)
-        for per in p.period:
-            print(per)
-        for r in p.researchers:
-            print(r.name)
-        for t in p.target:
-            print(t)
-        for w in p.wp:
-            print(f"Name: {w.name} \t Dedication: {w.dedication} \t Start: {w.start} \t End: {w.end}")
-    """
     for r in R:
         print(r)
-    """
+
+    for p in P:
+        print(p)
+        for w in p.wp:
+            print(f"Name: {w.name} \t Dedication: {w.dedication} \t Start: {w.start} \t End: {w.end}")
+        for t in p.target:
+            print(t)
+        for r in p.researchers:
+            print(r.name)
+        for pe in p.period:
+            print(pe)
+        sd,ed = p.date()
+        print(f"Starting month of the project, {p.name}: {sd}")
+        print(f"Ending month of the project, {p.name}: {ed}")
+    
+    
