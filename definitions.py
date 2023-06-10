@@ -84,6 +84,7 @@ class Researcher:
         self.time = time
         self.contract = contract
         self.projects = []
+        self.instances = []
 
     def __str__(self):
         if self.contract:
@@ -273,6 +274,7 @@ class Project:
         self.period = []
         self.researchers = []
         self.target = []
+        self.instances = []
         
     def __str__(self):
         string_ = f"Project: {self.name} \t ID: {self.id} \n"
@@ -444,6 +446,20 @@ class PlanningHorizon:
         
         return None
 
+class Instance:
+    """
+        This class stores the information of the instance
+    """ 
+    def __init__(self,id_,P,R):
+        self.id = id_
+        self.projects = P
+        self.researchers = R
+        
+    def __str__(self):
+        return f"Instance: {self.id}, Projects: {len(self.projects)}, Researchers: {len(self.researchers)}"
+
+    def __repr__(self):
+        return self.id
 
 if __name__ == '__main__':
 

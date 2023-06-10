@@ -1,8 +1,8 @@
 """
 Roger Lera
-2023/03/07
+2023/06/09
 """
-
+from read_instance import read_researcher,instance_projects
 from definitions import *
 from scipy.sparse import csr_matrix
 from numba import jit
@@ -627,58 +627,62 @@ def B_matrix_slow(xw, P):
     
     return B
 
-def matrices(P,R):
-
-    # compute planning horizon
-    #print("Compute planning horizon")
-    M = planning_horizon(P)
+def matrices_u(P_total,R_total,I):
     
     # compute decision variables sets
     #print("Compute decision variables")
-    xp,xw = decision_variables(P)
+    xp_total,xw_total = decision_variables(P_total)
 
-    # A matrix np.array of floats (|xp| x |xw|)
-    A = A_matrix(xw,xp)
-    #A = A_matrix_dense(xw,xp)
-    #A = A_matrix_slow(xw,xp)
-    #print("Equal matrices? ",np.testing.assert_array_equal(Aq.toarray(), A))
+    A_list = []
+    D_list = []
+    T_list = []
+    B_list = []
+    t_list = []
+    d_list = []
+    tau_list = []
+    b_list = []
 
-    # D np.array of floats (|w| x |xw|)
-    D = D_matrix(xw,P)
-    #D = D_matrix_dense(xw,P)
-    #D = D_matrix_slow(xw,P)
-    #print("Equal matrices? ",np.testing.assert_array_equal(Dq.toarray(), D))
-
-    # T np.array of floats (|R|·|M| x |xw|)
-    T = T_matrix(xw,R,M)
-    #T = T_matrix_dense(xw,R,M)
-    #T = T_matrix_slow(xw,R,M)
-    #print("Equal matrices? ",np.testing.assert_array_equal(Tq.toarray(), T))
-
-    # target is t vector in the formulation (|xp| dim)
-    #print("Compute target")
+    for i in I:
+        # A matrix np.array of floats (|xp| x |xw|)
+        P = i.projects
+        R = i.researchers
+        M = planning_horizon(P)
     
-    #t = target_vector(xp)
-    t = target_vector_int(xp)
-    
-    # dedication of each work package (|w|)
-    #print("Compute d")
-    d = dedication_vector(P)
+        # compute decision variables sets
+        #print("Compute decision variables")
+        xp,xw = decision_variables(P)
+        A = A_matrix(xw_total,xp)
+        A_list.append(A)
 
-    # tau vector (|R|·|M|) maximum hours per each month and staff researcher
-    #print("Compute tau")
-    tau = tau_vector(R,M)
+        # D np.array of floats (|w| x |xw|)
+        D = D_matrix(xw,P)
+        D_list.append(D)
 
-    # B np.array of floats (|P| x |xw|)
-    B = B_matrix(xw,P)
-    #B = B_matrix_dense(xw,P)
-    #B = B_matrix_slow(xw,P)
-    #print("Equal matrices? ",np.testing.assert_array_equal(Bq.toarray(), B))
+        # T np.array of floats (|R|·|M| x |xw|)
+        T = T_matrix(xw,R,M)
+        T_list.append(T)
 
-    # b np.array of floats (|P|)
-    b = b_vector(P)
+        # target is t vector in the formulation (|xp| dim)
+        t = target_vector_int(xp)
+        t_list.append(t)
+        
+        # dedication of each work package (|w|)
+        d = dedication_vector(P)
+        d_list.append(d)
 
-    return M,xp,xw,A,t,D,d,T,tau,B,b
+        # tau vector (|R|·|M|) maximum hours per each month and staff researcher
+        tau = tau_vector(R,M)
+        tau_list.append(tau)
+
+        # B np.array of floats (|P| x |xw|)
+        B = B_matrix(xw,P)
+        B_list.append(B)
+        
+        # b np.array of floats (|P|)
+        b = b_vector(P)
+        b_list.append(b)
+
+    return M,xp,xw,A_list,t_list,D_list,d_list,T_list,tau_list,B_list,b_list
 
 
 ###############################################################################
@@ -687,7 +691,6 @@ def matrices(P,R):
 if __name__ == '__main__':
     
     print("---------------MAIN------------------")
-    from read_instance import read_researcher,instance_projects
     path_ = os.getcwd()
     directory_ = 'data'
     file_ = 'researchers.csv'
@@ -695,5 +698,5 @@ if __name__ == '__main__':
     file_projects = os.path.join(path_,directory_,'projects')
     R = read_researcher(file_path)
     P = instance_projects(file_projects,R)
-    data = matrices(P,R)
+    data = matrices_u(P,R)
     M,xp,xw,A,t,D,d,T,tau,B,b = data

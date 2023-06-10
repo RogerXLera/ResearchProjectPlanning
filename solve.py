@@ -13,6 +13,8 @@ from read_instance import read_researcher,instance_projects
 from generate_instance import RPP_instance
 from process_instance import *
 import random as rd
+from generate_uncertainty import RPP_uncertainty
+from process_uncertainty import *
 
 
 def definitions_generation(res_file_path,projects_folder):
@@ -82,19 +84,7 @@ def solve_problem(problem,x,u,v):
     
     return obj_value,xx,uu,vv
 
-def print_analytics(z,x,B,A,P,t):
-    """
-    Print the analytics of the Results
-    """
-    ja = job_affinity(t,z,args.p)
-    print(f"Job Affinity: {ja} (%)")
-    money_period = B@x
-    len_p = len(P.sequence)
-    for i in range(len_p):
-        print(f"Period: {P.sequence[i].id} \t Budget: {money_period[i]} (ZLTOs)")
 
-    return None
-        
 
 if __name__ == '__main__':
 
@@ -127,6 +117,7 @@ if __name__ == '__main__':
     parser.add_argument('--solver', type=str, choices=['CPLEX', 'GUROBI'], default='CPLEX')
     parser.add_argument('--file', help='--file: Store the results in a txt file. -f for filename', action='store_true')
     parser.add_argument('--instance', help='--instance: Create an instance', action='store_true')
+    parser.add_argument('-k', type=int, default=10, help='k: Number of instances')
     parser.add_argument('--robust', help='--robust: Apply a robust approximation', action='store_true')
     parser.add_argument('-I', type=int, default=10, help='I: Number of instances')
     parser.add_argument('-f', type=str, default="results", help='f: Name of the file')
@@ -136,12 +127,16 @@ if __name__ == '__main__':
 
     researchers_file_path = os.path.join(path_,wd_,args.researchers)
     projects_folder = os.path.join(path_,wd_,args.projects)
-
+    param_ = (args.w,args.W,args.l,args.L,args.d,args.y,args.Y,args.c,args.C,args.S,args.r,args.R,args.v,args.V,args.e)
     #data
     if args.instance:
-        P,R = RPP_instance(args.N,args.w,args.W,args.l,args.L,args.d,args.y,args.Y,args.c,args.C,args.S,args.r,args.R,args.v,args.V,args.e)
+        P,R = RPP_instance(args.N,param_)
     else:
         P,R = definitions_generation(researchers_file_path,projects_folder)
+    
+    if args.robust:
+        P,R = RPP_uncertainty(P,R,args.k,param_)
+
 
     data = matrices(P,R)
     M,xp,xw,A,t,D,d,T,tau,B,b = data
