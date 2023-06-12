@@ -11,10 +11,10 @@ import csv
 from definitions import * # classes Skill, Activity, TimePeriod, TimePeriodSequence, Job, User Preference
 from read_instance import read_researcher,instance_projects
 from generate_instance import RPP_instance
-from process_instance import *
+from process_instance import matrices
 import random as rd
 from generate_uncertainty import RPP_uncertainty
-from process_uncertainty import *
+from process_uncertainty import matrices_u
 
 
 def definitions_generation(res_file_path,projects_folder):
@@ -65,6 +65,83 @@ def ilp_model(variables,matrices,model_par):
     return prob,x,u,v
 
 
+def ilp_model_u(variables,matrices,model_par):
+    """
+    This function returns the cp.problem object and the model variables
+    """
+    xp,xw = variables
+    A_list,t_list,D_list,d_list,T_list,tau_list,B_list,b_list = matrices
+    alpha,beta,gamma,mu,w_rho,w_delta,prob_u = model_par
+    n_uncertainty = len(A_list) - 1
+    # let's weight the probability of each instance to happen
+    probability = np.ones(n_uncertainty+1)
+    probability[0] *= prob_u
+    probability[1:] *= (1-prob_u)/n_uncertainty
+    
+
+    len_x = len(xw)
+    ############################VARIABLES#############################
+    
+    x = cp.Variable(len_x,integer=False) # set variables as a vector x
+    u_list = []
+    v_list = []
+    #u = cp.Variable(len_b*n_uncertainty,integer=False) # set variables as a vector u
+    #v = cp.Variable(len_b*n_uncertainty,integer=False) # set variables as a vector v
+    A = cp.Variable(n_uncertainty+1,integer=False) # set variables as a vector A
+    B = cp.Variable(n_uncertainty+1,integer=False) # set variables as a vector B
+    G = cp.Variable(n_uncertainty+1,integer=False) # set variables as a vector \Gamma
+    #rho = cp.Variable(n_uncertainty,integer=False) # set variables as a vector \rho
+    #delta = cp.Variable(n_uncertainty,integer=False) # set variables as a vector \delta
+    rho_list = []
+    delta_list = []
+    RHO = cp.Variable(n_uncertainty,integer=False)
+    DELTA = cp.Variable(n_uncertainty,integer=False)
+
+    ############################OBJECTIVE#############################
+
+    cost = alpha*probability@A + beta*probability@B + gamma*probability@G + w_rho*probability[1:]@RHO + w_delta*probability[1:]@DELTA
+    ###########################CONSTRAINTS###########################
+    cs = [x >= np.zeros_like(x,dtype=int)]
+    for i in range(n_uncertainty+1):
+        
+        len_b = np.shape(B_list[i])[0]
+        u = cp.Variable(len_b,integer=False)
+        u_list += [u]
+        v = cp.Variable(len_b,integer=False)
+        v_list += [v]
+        cs += [cp.sum_squares(A_list[i]@x - t_list[i]) <= A[i]]
+        cs += [cp.sum_squares(v) <= B[i]]
+        cs += [cp.sum_squares(u) <= G[i]]
+        cs += [B_list[i] @ x - mu*b_list[i] <= u]
+        cs += [B_list[i] @ x - mu*b_list[i] >= v]
+        cs += [np.zeros_like(b_list[i],dtype=int) <= u]
+        cs += [np.zeros_like(b_list[i],dtype=int) >= v]
+        if i == 0:   
+            cs += [D_list[i] @ x >= d_list[i]] #dedication constraint
+            cs += [T_list[i] @ x <= tau_list[i]] #staff dedication constraint
+        else:
+            len_rho = len(tau_list[i])
+            rho = cp.Variable(len_rho,integer=False)
+            rho_list += [rho]
+
+            len_del = len(d_list[i])
+            delta = cp.Variable(len_del,integer=False)
+            delta_list += [delta]
+
+            cs += [D_list[i] @ x >= d_list[i] - delta] #dedication constraint
+            cs += [T_list[i] @ x <= tau_list[i] + rho] #staff dedication constraint
+            cs += [delta >= np.zeros_like(delta,dtype=int)]
+            cs += [rho >= np.zeros_like(rho,dtype=int)]
+            cs += [cp.sum_squares(delta) <= DELTA[i-1]]
+            cs += [cp.sum_squares(rho) <= RHO[i-1]]
+
+    ######################PROBLEM###############################
+    
+    
+    prob = cp.Problem(cp.Minimize(cost),cs)
+    return prob,x,u_list,v_list,A,B,G,rho_list,delta_list,RHO,DELTA
+
+
 def solve_problem(problem,x,u,v):
     """
         We solve the problem
@@ -83,6 +160,33 @@ def solve_problem(problem,x,u,v):
     print(f"Time: {finish_time - start_time:.2f}")
     
     return obj_value,xx,uu,vv
+
+def solve_problem_u(problem,x,u,v,A,B,G,rho,delta,RHO,DELTA):
+    """
+        We solve the problem
+    """
+    n_uncertainty = len(rho)
+    start_time = time.time()
+    problem.solve(solver=args.solver,verbose=True,cplex_params={"barrier.limits.objrange":1e20,"barrier.display":1,
+                                                                #"barrier.limits.iteration":1e3,
+                                                                })
+    finish_time = time.time()
+    obj_value = problem.value
+    print("The optimal value is", obj_value)
+    xx = np.array(x.value) #list with the results of x (|x| dim)
+    AA = np.array(A.value) 
+    BB = np.array(B.value) 
+    GG = np.array(G.value) 
+    RRHO = np.array(RHO.value) 
+    DDELTA = np.array(DELTA.value) 
+    uu = [np.array(u[i].value) for i in range(n_uncertainty+1)]
+    vv = [np.array(v[i].value) for i in range(n_uncertainty+1)]
+    rrho = [np.array(rho[i].value) for i in range(n_uncertainty)]
+    ddelta = [np.array(delta[i].value) for i in range(n_uncertainty)]
+
+    print(f"Time: {finish_time - start_time:.2f}")
+    
+    return obj_value,xx,uu,vv,AA,BB,GG,rrho,ddelta,RRHO,DDELTA
 
 
 
@@ -108,9 +212,12 @@ if __name__ == '__main__':
     parser.add_argument('-V', type=int, default=130, help='V: Maximum hours available per month and researcher')
     parser.add_argument('-e', type=int, default=3, help='e: Number of repetitions to search an alternative researcher in researchers instance generator.')
     parser.add_argument('-m', type=float, default=1.0, help='m: Budget scarcity')
-    parser.add_argument('-a', type=float, default=1.0, help='a: Alpha parameter')
-    parser.add_argument('-b', type=float, default=1.0, help='b: Beta parameter')
-    parser.add_argument('-g', type=float, default=1.0, help='g: Gamma parameter')
+    parser.add_argument('-a', type=float, default=0.8, help='a: Alpha parameter')
+    parser.add_argument('-b', type=float, default=0.1, help='b: Beta parameter')
+    parser.add_argument('-g', type=float, default=0.1, help='g: Gamma parameter')
+    parser.add_argument('--rho', type=float, default=0.5, help='b: Beta parameter')
+    parser.add_argument('--delta', type=float, default=0.5, help='g: Gamma parameter')
+    parser.add_argument('-p', type=float, default=0.5, help='p: Probability of not receiving uncertainty')
     parser.add_argument('--researchers', type=str, default='researchers.csv', help='--researchers: Researchers file')
     parser.add_argument('--projects', type=str, default='projects', help='--projects: projects folder')
     parser.add_argument('--seed', type=int, default=0, help='--seed: Seed')
@@ -118,6 +225,7 @@ if __name__ == '__main__':
     parser.add_argument('--file', help='--file: Store the results in a txt file. -f for filename', action='store_true')
     parser.add_argument('--instance', help='--instance: Create an instance', action='store_true')
     parser.add_argument('-k', type=int, default=10, help='k: Number of instances')
+    parser.add_argument('--nproj', type=int, default=3, help='nproj: Number of projects added')
     parser.add_argument('--robust', help='--robust: Apply a robust approximation', action='store_true')
     parser.add_argument('-I', type=int, default=10, help='I: Number of instances')
     parser.add_argument('-f', type=str, default="results", help='f: Name of the file')
@@ -128,27 +236,44 @@ if __name__ == '__main__':
     researchers_file_path = os.path.join(path_,wd_,args.researchers)
     projects_folder = os.path.join(path_,wd_,args.projects)
     param_ = (args.w,args.W,args.l,args.L,args.d,args.y,args.Y,args.c,args.C,args.S,args.r,args.R,args.v,args.V,args.e)
-    #data
+    
+    ## data
     if args.instance:
-        P,R = RPP_instance(args.N,param_)
+        P,R = RPP_instance(args.N,args.w,args.W,args.l,args.L,args.d,args.y,args.Y,args.c,args.C,args.S,args.r,args.R,args.v,args.V,args.e)
     else:
         P,R = definitions_generation(researchers_file_path,projects_folder)
     
     if args.robust:
-        P,R = RPP_uncertainty(P,R,args.k,param_)
+        I = RPP_uncertainty(P,R,args.k,args.nproj,param_)
+        print(len(P))
+        print(len(R))
 
 
-    data = matrices(P,R)
-    M,xp,xw,A,t,D,d,T,tau,B,b = data
+    if args.robust:
+        data = matrices_u(P,R,I)
+        M_total,xp_total,xw_total,A_list,t_list,D_list,d_list,T_list,tau_list,B_list,b_list = data
+        #model
+        model_par = (args.a,args.b,args.g,args.m,args.rho,args.delta,args.p)
+        variables = (xp_total,xw_total)
+        matrices_ = (A_list,t_list,D_list,d_list,T_list,tau_list,B_list,b_list)
+        prob,x,u,v,A,B,G,rho,delta,RHO,DELTA = ilp_model_u(variables,matrices_,model_par)
+
+        #solve
+        value,xx,uu,vv,AA,BB,GG,rrho,ddelta,RRHO,DDELTA = solve_problem_u(prob,x,u,v,A,B,G,rho,delta,RHO,DELTA)
+
     
-    #model
-    model_par = (args.a,args.b,args.g,args.m)
-    variables = (xp,xw)
-    matrices = (A,t,D,d,T,tau,B,b)
-    prob,x,u,v = ilp_model(variables,matrices,model_par)
+    else:
+        data = matrices(P,R)
+        M,xp,xw,A,t,D,d,T,tau,B,b = data
+    
+        #model
+        model_par = (args.a,args.b,args.g,args.m)
+        variables = (xp,xw)
+        matrices_ = (A,t,D,d,T,tau,B,b)
+        prob,x,u,v = ilp_model(variables,matrices_,model_par)
 
-    #solve
-    value,xx,uu,vv = solve_problem(prob,x,u,v)
+        #solve
+        value,xx,uu,vv = solve_problem(prob,x,u,v)
 
 
     

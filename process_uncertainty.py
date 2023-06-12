@@ -273,7 +273,7 @@ def A_matrix(xw,xp):
         :xw (list)
     RETURN: A matrix (np.matrix)
     """
-    print("Compute A")
+    #print("Compute A")
     st = time.time()
     va = tuple2uint(
         [(r.id,p.id,m.id,0) for (r,p,m) in xp],
@@ -289,10 +289,10 @@ def A_matrix(xw,xp):
     A_V, A_R, A_C = coo(va, vb, size, vac, vbc)
     A = csr_matrix((A_V, (A_R, A_C)), shape=(len(va), len(vb)))
     ft = time.time()
-    print(f"Time to compute A (sparse): {ft-st}")
-    print(f'Size of dense A: {sizeof_fmt(len(va) * len(vb))}')
-    print(f'Size of sparse A: {sizeof_fmt(A_V.nbytes + A_R.nbytes + A_C.nbytes)}')
-    print(f'Density: {100 * len(A_V) / (len(va) * len(vb)):.2e}%')
+    #print(f"Time to compute A (sparse): {ft-st}")
+    #print(f'Size of dense A: {sizeof_fmt(len(va) * len(vb))}')
+    #print(f'Size of sparse A: {sizeof_fmt(A_V.nbytes + A_R.nbytes + A_C.nbytes)}')
+    #print(f'Density: {100 * len(A_V) / (len(va) * len(vb)):.2e}%')
     
     return A
 
@@ -365,7 +365,7 @@ def D_matrix(xw,P):
         :xw (list)
     RETURN: D matrix (np.matrix)
     """
-    print("Compute D")
+    #print("Compute D")
     st = time.time()
     va = tuple2uint(
         [(p.id,w.id) for p in P for w in p.wp],
@@ -381,10 +381,10 @@ def D_matrix(xw,P):
     D_V, D_R, D_C = coo(va, vb, size, vac, vbc)
     D = csr_matrix((D_V, (D_R, D_C)), shape=(len(va), len(vb)))
     ft = time.time()
-    print(f"Time to compute D (sparse): {ft-st}")
-    print(f'Size of dense D: {sizeof_fmt(len(va) * len(vb))}')
-    print(f'Size of sparse D: {sizeof_fmt(D_V.nbytes + D_R.nbytes + D_C.nbytes)}')
-    print(f'Density: {100 * len(D_V) / (len(va) * len(vb)):.2e}%')
+    #print(f"Time to compute D (sparse): {ft-st}")
+    #print(f'Size of dense D: {sizeof_fmt(len(va) * len(vb))}')
+    #print(f'Size of sparse D: {sizeof_fmt(D_V.nbytes + D_R.nbytes + D_C.nbytes)}')
+    #print(f'Density: {100 * len(D_V) / (len(va) * len(vb)):.2e}%')
     
     return D
 
@@ -458,7 +458,7 @@ def T_matrix(xw,R,M):
         :xw (list)
     RETURN: T matrix (np.matrix)
     """
-    print("Compute T")
+    #print("Compute T")
     st = time.time()
     va = tuple2uint(
         [(r.id,m.id) for r in R for m in M.sequence],
@@ -474,10 +474,10 @@ def T_matrix(xw,R,M):
     T_V, T_R, T_C = coo(va, vb, size, vac, vbc)
     T = csr_matrix((T_V, (T_R, T_C)), shape=(len(va), len(vb)))
     ft = time.time()
-    print(f"Time to compute T (sparse): {ft-st}")
-    print(f'Size of dense T: {sizeof_fmt(len(va) * len(vb))}')
-    print(f'Size of sparse T: {sizeof_fmt(T_V.nbytes + T_R.nbytes + T_C.nbytes)}')
-    print(f'Density: {100 * len(T_V) / (len(va) * len(vb)):.2e}%')
+    #print(f"Time to compute T (sparse): {ft-st}")
+    #print(f'Size of dense T: {sizeof_fmt(len(va) * len(vb))}')
+    #print(f'Size of sparse T: {sizeof_fmt(T_V.nbytes + T_R.nbytes + T_C.nbytes)}')
+    #print(f'Density: {100 * len(T_V) / (len(va) * len(vb)):.2e}%')
 
     return T
 
@@ -553,7 +553,7 @@ def B_matrix(xw, P):
         :xw (list)
     RETURN: B matrix (np.matrix)
     """
-    print("Compute B")
+    #print("Compute B")
     st = time.time()
     va = np.array([p.id for p in P])
     vb = np.array([w.project.id for (r,w,m) in xw])
@@ -564,10 +564,10 @@ def B_matrix(xw, P):
     B = csr_matrix((B_V, (B_R, B_C)), shape=(len(va), len(vb)))
     
     ft = time.time()
-    print(f"Time to compute B (sparse): {ft-st}")
-    print(f'Size of dense B: {sizeof_fmt(8 * len(va) * len(vb))}')
-    print(f'Size of sparse B: {sizeof_fmt(B_V.nbytes + B_R.nbytes + B_C.nbytes)}')
-    print(f'Density: {100 * len(B_V) / (len(va) * len(vb)):.2e}%')
+    #print(f"Time to compute B (sparse): {ft-st}")
+    #print(f'Size of dense B: {sizeof_fmt(8 * len(va) * len(vb))}')
+    #print(f'Size of sparse B: {sizeof_fmt(B_V.nbytes + B_R.nbytes + B_C.nbytes)}')
+    #print(f'Density: {100 * len(B_V) / (len(va) * len(vb)):.2e}%')
     
     return B
 
@@ -629,6 +629,7 @@ def B_matrix_slow(xw, P):
 
 def matrices_u(P_total,R_total,I):
     
+    M_total = planning_horizon(P_total)
     # compute decision variables sets
     #print("Compute decision variables")
     xp_total,xw_total = decision_variables(P_total)
@@ -655,11 +656,11 @@ def matrices_u(P_total,R_total,I):
         A_list.append(A)
 
         # D np.array of floats (|w| x |xw|)
-        D = D_matrix(xw,P)
+        D = D_matrix(xw_total,P)
         D_list.append(D)
 
         # T np.array of floats (|R|·|M| x |xw|)
-        T = T_matrix(xw,R,M)
+        T = T_matrix(xw_total,R,M)
         T_list.append(T)
 
         # target is t vector in the formulation (|xp| dim)
@@ -675,14 +676,14 @@ def matrices_u(P_total,R_total,I):
         tau_list.append(tau)
 
         # B np.array of floats (|P| x |xw|)
-        B = B_matrix(xw,P)
+        B = B_matrix(xw_total,P)
         B_list.append(B)
         
         # b np.array of floats (|P|)
         b = b_vector(P)
         b_list.append(b)
 
-    return M,xp,xw,A_list,t_list,D_list,d_list,T_list,tau_list,B_list,b_list
+    return M_total,xp_total,xw_total,A_list,t_list,D_list,d_list,T_list,tau_list,B_list,b_list
 
 
 ###############################################################################
