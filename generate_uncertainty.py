@@ -131,7 +131,10 @@ def researcher_structure(P,R,len_r,RS,cost_min,cost_max,av_min,av_max,rep):
             if create_res == False:
                 cost_r = rd.uniform(cost_min,cost_max)
                 av_r = rd.randint(av_min,av_max)
-                con_r = rd.choice([True, False])
+                if cost_r < cost_min + (cost_max-cost_min)/2:
+                    con_r = True
+                else:
+                    con_r = False
                 res = Researcher(id_=r,name=f"R{r}",cost=cost_r,time=av_r,contract=con_r)
                 t_p_ = rd.random()
                 for period in p.period:

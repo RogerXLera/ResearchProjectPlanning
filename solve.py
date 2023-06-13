@@ -158,7 +158,6 @@ def solve_problem(problem,x,u,v):
     vv = np.array(v.value)
 
     print(f"Time: {finish_time - start_time:.2f}")
-    
     return obj_value,xx,uu,vv
 
 def solve_problem_u(problem,x,u,v,A,B,G,rho,delta,RHO,DELTA):
@@ -185,10 +184,83 @@ def solve_problem_u(problem,x,u,v,A,B,G,rho,delta,RHO,DELTA):
     ddelta = [np.array(delta[i].value) for i in range(n_uncertainty)]
 
     print(f"Time: {finish_time - start_time:.2f}")
-    
+
     return obj_value,xx,uu,vv,AA,BB,GG,rrho,ddelta,RRHO,DDELTA
 
+def residual(vec,norm_vec):
 
+    vec_sum = np.sum(np.absolute(vec))
+    norm_vec_sum = np.sum(np.absolute(norm_vec))
+
+    return vec_sum/norm_vec_sum*100
+    
+def contract_dedication(xw,xx):
+
+    con_ded = 0
+    for i in range(len(xw)):
+        r = xw[i][0]
+        if r.contract:
+            con_ded += xx[i]
+    
+    total_ded = np.sum(np.absolute(xx))
+
+    return con_ded/total_ded*100
+
+
+def print_metrics(value,variables,matrices,params):
+
+    xp,xw,xx,uu,vv = variables
+    A,t,D,d,T,tau,B,b = matrices
+    alpha,beta,gamma,mu = params
+    fairness = residual(A@xx-t,t)
+    ded_residual = residual(D@xx-d,d)
+    bud_residual = residual(B@xx -b,b)
+    res_residual = residual(T@xx - tau,tau)
+    con_ded = contract_dedication(xw,xx)
+    bud_eff = np.sum(np.absolute(vv))
+    bud_exc = np.sum(np.absolute(uu))
+    target = np.sum(np.absolute(t))
+
+    print(f"######################################")
+    print(f"############# Results ################")
+    print(f"######################################")
+    print(f"Alpha, Beta, Gamma, Mu, Fairness, Dedication R, Budget R, Researchers R, Contract d, Budget eff, Budget exc, Target")
+    print(f"{alpha:.7f},{beta:.7f},{gamma:.7f},{mu:.3f},{fairness:.3f},{ded_residual:.3f},{bud_residual:.3f},{res_residual:.3f},{con_ded:.3f},{bud_eff:.3f},{bud_exc:.3f},{target:.3f}")
+    return None
+
+
+def print_metrics_u(value,variables,matrices,params):
+
+    xp,xw,xx,uu,vv,AA,BB,GG,rrho,ddelta,RRHO,DDELTA = variables
+    A_list,t_list,D_list,d_list,T_list,tau_list,B_list,b_list = matrices
+    n_uncertainty = len(rrho)
+    alpha,beta,gamma,mu,w_rho,w_delta,w_prob = params
+    matrices_ = A_list[0],t_list[0],D_list[0],d_list[0],T_list[0],tau_list[0],B_list[0],b_list[0]
+    variables_ = xp,xw,xx,uu[0],vv[0]
+    print_metrics(value,variables_,matrices_,params[:4])
+    AA_ = np.sum(np.absolute(AA))
+    BB_ = np.sum(np.absolute(BB))
+    GG_ = np.sum(np.absolute(GG))
+    RRHO_ = np.sum(np.absolute(RRHO))
+    DDELTA_ = np.sum(np.absolute(DDELTA))
+
+    print(f"N instances, W rho, W delta, W prob, A, B, G, RHO, DELTA")
+    print(f"{n_uncertainty},{w_rho:.3f},{w_delta:.3f},{w_prob:.3f},{AA_:.3f},{BB_:.3f},{GG_:.3f},{RRHO_:.3f},{DDELTA_:.3f}")
+
+    return None
+
+def print_instance_metrics(P,R,M):
+    
+    len_p = len(P)
+    len_r = len(R)
+    len_m = len(M.sequence)
+
+    print(f'################################################')
+    print(f'################### METRICS ####################')
+    print(f'################################################')
+    print("Total Projects, Total Researchers, Total Months")
+    print(f"{len_p},{len_r},{len_m}")
+    return None
 
 if __name__ == '__main__':
 
@@ -245,13 +317,12 @@ if __name__ == '__main__':
     
     if args.robust:
         I = RPP_uncertainty(P,R,args.k,args.nproj,param_)
-        print(len(P))
-        print(len(R))
 
 
     if args.robust:
         data = matrices_u(P,R,I)
         M_total,xp_total,xw_total,A_list,t_list,D_list,d_list,T_list,tau_list,B_list,b_list = data
+        print_instance_metrics(P,R,M_total)
         #model
         model_par = (args.a,args.b,args.g,args.m,args.rho,args.delta,args.p)
         variables = (xp_total,xw_total)
@@ -260,7 +331,8 @@ if __name__ == '__main__':
 
         #solve
         value,xx,uu,vv,AA,BB,GG,rrho,ddelta,RRHO,DDELTA = solve_problem_u(prob,x,u,v,A,B,G,rho,delta,RHO,DELTA)
-
+        variables_ = xp_total,xw_total,xx,uu,vv,AA,BB,GG,rrho,ddelta,RRHO,DDELTA
+        print_metrics_u(value,variables_,matrices_,model_par)
     
     else:
         data = matrices(P,R)
@@ -274,6 +346,8 @@ if __name__ == '__main__':
 
         #solve
         value,xx,uu,vv = solve_problem(prob,x,u,v)
+        variables_ = xp,xw,xx,uu,vv
+        print_metrics(value,variables_,matrices_,model_par)
 
 
     
