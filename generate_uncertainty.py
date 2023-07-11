@@ -151,6 +151,38 @@ def researcher_structure(P,R,len_r,RS,cost_min,cost_max,av_min,av_max,rep):
 
     return R_new
 
+
+def researcher_structure_no_researchers(P,R):
+    """
+    This function generates the researchers structure.
+    """
+    n_res = len(R)
+    for p in P:
+        
+        d_p = p.dedication() # dedication of project p
+        d_p_prima = 0 # current project dedication satisfied
+        sd_p,ed_p = p.date() # starting date and endind date
+        per_p = Period(id_=0,start=sd_p,end=ed_p)
+        dur_p = per_p.duration()
+        while d_p > d_p_prima:
+            wl = 0
+            
+            r_ = rd.randint(0,n_res-1)
+            res = R[r_] #Researcher object
+            t_p_ = 0
+            if res not in p.researchers:
+                t_p_ = rd.uniform(0,1)
+                for period in p.period:
+                    t_p = Target(project=p,researcher=res,period=period,value=t_p_)
+                    t_p.add(p.target)
+
+                res.add(p.researchers)
+                res.projects.append(p)
+
+            d_p_prima += t_p_*res.time*dur_p
+
+    return None
+
 def instance_objects(P,R,instance_id):
 
     if instance_id == 0:
@@ -187,11 +219,19 @@ def RPP_uncertainty(P,R,n_instances,N_max,param_):
         
         n_proj = rd.randint(1,N_max)
         P_new = project_structure(P,n_proj,wp_min,wp_max,dur_mean,dur_sd,ded_l,lambda_w,lambda_p,cost_min,cost_max)
-        R_new = researcher_structure(P_new,instance_0.researchers,len(R),RS,costr_min,costr_max,av_min,av_max,rep)
+        R_new = instance_0.researchers.copy()
+        # adding new researchers
+        #R_new = researcher_structure(P_new,instance_0.researchers,len(R),RS,costr_min,costr_max,av_min,av_max,rep)
+        #without adding new researchers
+        researcher_structure_no_researchers(P_new,R_new)
         P += P_new
-        R += R_new       
+        # adding new researchers
+        #R += R_new       
         instance_objects(P,R,i)
-        instance_i = Instance(i,instance_0.projects + P_new,instance_0.researchers + R_new)
+        #adding new researchers
+        #instance_i = Instance(i,instance_0.projects + P_new,instance_0.researchers + R_new)
+        #without adding new researchers
+        instance_i = Instance(i,instance_0.projects + P_new,R_new)
         I.append(instance_i)
     
     return I

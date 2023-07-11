@@ -148,6 +148,8 @@ def solve_problem(problem,x,u,v):
     """
     start_time = time.time()
     problem.solve(solver=args.solver,verbose=True,cplex_params={"barrier.limits.objrange":1e20,"barrier.display":1,
+                                                                "simplex.tolerances.feasibility":1e-1,
+                                                                "barrier.convergetol":1e-6,
                                                                 #"barrier.limits.iteration":1e3,
                                                                 })
     finish_time = time.time()
@@ -167,6 +169,7 @@ def solve_problem_u(problem,x,u,v,A,B,G,rho,delta,RHO,DELTA):
     n_uncertainty = len(rho)
     start_time = time.time()
     problem.solve(solver=args.solver,verbose=True,cplex_params={"barrier.limits.objrange":1e20,"barrier.display":1,
+                                                                "simplex.tolerances.feasibility":1e-6,
                                                                 #"barrier.limits.iteration":1e3,
                                                                 })
     finish_time = time.time()
