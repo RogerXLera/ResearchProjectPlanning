@@ -21,19 +21,15 @@ Execution
 ----------
 Our approach must be executed by means of the [`solve.py`](solve.py) Python script, i.e.,
 ```
-usage: solve.py [-h] [-m M] [-t T] [--alpha ALPHA] [-p P] [-j J] [-a A] [--name NAME] [--model MODEL] 
-                [-- solver SOLVER]
+usage: python3 solve.py [-a A] [-b B] [-g G] [-m M] [--solver SOLVER] [--instance] [--robust]
 
 optional arguments:
-  -h, --help      show this help message and exit
-  -m M            number of time periods (default: 100)
-  -t T            tau dedication per period (default: 2)
-  --alpha ALPHA   cost function weight parameter (default: 0.5)
-  -p P            p-norm (default: 1)
-  -j J            Job ID 
-  -a A            activities file
-  --name NAME     user name
-  --model MODEL   ILP encoding model (choices=['fixed','variable','mixed'])
+  -a A            alpha parameter (default: 0.8)
+  -b B            beta parameter (default: 0.1)
+  -g G            gamma parameter (default: 0.1)
+  -m M            budget variability (default: 1.0)
   --solver SOLVER solver to compute the solution (choices=['CPLEX','GUROBI'])
+  --instance      generate random instances of projects and researchers
+  --robust        apply SRA to obtain robust plans considering uncertainty
 ```
 

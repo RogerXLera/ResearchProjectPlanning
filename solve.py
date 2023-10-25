@@ -192,10 +192,21 @@ def solve_problem_u(problem,x,u,v,A,B,G,rho,delta,RHO,DELTA):
 
 def residual(vec,norm_vec):
 
+    
     vec_sum = np.sum(np.absolute(vec))
     norm_vec_sum = np.sum(np.absolute(norm_vec))
 
     return vec_sum/norm_vec_sum*100
+
+def marre(vec,max_val,min_val):
+    norm_vec = (max_val-min_val)*np.ones_like(vec)
+    vec_sum = np.sum(np.absolute(vec/norm_vec))
+    return vec_sum/len(vec)*100
+
+def mape(vec,norm_vec):
+    vec_sum = np.sum(np.absolute(vec/norm_vec))
+    return vec_sum/len(vec)*100
+
     
 def contract_dedication(xw,xx):
 
@@ -215,10 +226,11 @@ def print_metrics(value,variables,matrices,params):
     xp,xw,xx,uu,vv = variables
     A,t,D,d,T,tau,B,b = matrices
     alpha,beta,gamma,mu = params
-    fairness = residual(A@xx-t,t)
-    ded_residual = residual(D@xx-d,d)
-    bud_residual = residual(B@xx -b,b)
-    res_residual = residual(T@xx - tau,tau)
+    fairness = marre(A@xx-t,args.V,0)
+    ded_residual = mape(D@xx-d,d)
+    bud_residual = mape(vv,mu*b)
+    bud_exceeding = mape(uu,mu*b)
+    res_residual = marre(T@xx-tau,args.V,0)
     con_ded = contract_dedication(xw,xx)
     bud_eff = np.sum(np.absolute(vv))
     bud_exc = np.sum(np.absolute(uu))
@@ -227,8 +239,8 @@ def print_metrics(value,variables,matrices,params):
     print(f"######################################")
     print(f"############# Results ################")
     print(f"######################################")
-    print(f"Alpha, Beta, Gamma, Mu, Fairness, Dedication R, Budget R, Researchers R, Contract d, Budget eff, Budget exc, Target")
-    print(f"{alpha:.7f},{beta:.7f},{gamma:.7f},{mu:.3f},{fairness:.3f},{ded_residual:.3f},{bud_residual:.3f},{res_residual:.3f},{con_ded:.3f},{bud_eff:.3f},{bud_exc:.3f},{target:.3f}")
+    print(f"Alpha, Beta, Gamma, Mu, Fairness, Dedication R, Budget R, Budget E, Researchers R, Contract d, Budget eff, Budget exc, Target")
+    print(f"{alpha:.7f},{beta:.7f},{gamma:.7f},{mu:.3f},{fairness:.3f},{ded_residual:.3f},{bud_residual:.3f},{bud_exceeding:.3f},{res_residual:.3f},{con_ded:.3f},{bud_eff:.3f},{bud_exc:.3f},{target:.3f}")
     return None
 
 
@@ -286,7 +298,7 @@ if __name__ == '__main__':
     parser.add_argument('-v', type=int, default=130, help='v: Minimum hours available per month and researcher')
     parser.add_argument('-V', type=int, default=130, help='V: Maximum hours available per month and researcher')
     parser.add_argument('-e', type=int, default=3, help='e: Number of repetitions to search an alternative researcher in researchers instance generator.')
-    parser.add_argument('-m', type=float, default=1.0, help='m: Budget scarcity')
+    parser.add_argument('-m', type=float, default=1.0, help='m: Budget variability')
     parser.add_argument('-a', type=float, default=0.8, help='a: Alpha parameter')
     parser.add_argument('-b', type=float, default=0.1, help='b: Beta parameter')
     parser.add_argument('-g', type=float, default=0.1, help='g: Gamma parameter')
